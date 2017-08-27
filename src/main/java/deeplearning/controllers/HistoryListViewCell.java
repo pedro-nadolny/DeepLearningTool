@@ -32,7 +32,7 @@ public class HistoryListViewCell extends ListCell<HistoryRow> {
         }
 
         if(loader == null) {
-            loader = new FXMLLoader(getClass().getResource("/deeplearning/interface/HistoryListViewCell.fxml"));
+            loader = new FXMLLoader(getClass().getClassLoader().getResource("HistoryListViewCell.fxml"));
             loader.setController(this);
 
             try {
