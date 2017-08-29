@@ -51,7 +51,11 @@ public class HistoryListViewCell extends ListCell<HistoryRow> {
         box.getChildren().remove(iconFail);
         box.getChildren().remove(iconDone);
 
-        if (item.done.get()) {
+        boolean ended = item.endedCC.get() && !item.isRunningDL.get();
+        ended = ended || (item.endedDL.get() && !item.isRunningCC.get());
+        ended = ended || (item.endedDL.get() && item.endedCC.get());
+
+        if (ended) {
             box.getChildren().add(0, iconDone);
         } else if(item.fail.get()){
             box.getChildren().add(0, iconFail);

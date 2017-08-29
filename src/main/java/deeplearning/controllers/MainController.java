@@ -227,22 +227,21 @@ public class MainController extends VBox implements Initializable{
 
             if (radioButtonC45.isSelected()) {
                 builder.append("C4.5");
-                addToHistory(builder.toString());
+                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
                 runC45();
 
             } else if (radioButtonNaiveBayes.isSelected()) {
                 builder.append("NB");
-                addToHistory(builder.toString());
-                runNaiveBayes();
+                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
 
             } else if (radioButtonNeuralNetwork.isSelected()) {
                 builder.append("NN");
-                addToHistory(builder.toString());
+                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
                 runNeuralNetwork();
 
             } else if (radioButtonRuleBased.isSelected()) {
                 builder.append("RB");
-                addToHistory(builder.toString());
+                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
                 runRuleBased();
             }
         }
@@ -250,7 +249,7 @@ public class MainController extends VBox implements Initializable{
         if (checkBoxEnableDL.isSelected()) {
             if(!checkBoxEnableCC.isSelected()) {
                 builder.append("DL");
-                addToHistory(builder.toString());
+                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
             }
 
             runDeepLearning();
@@ -285,12 +284,12 @@ public class MainController extends VBox implements Initializable{
         if(n != null) parametersBox.getChildren().add(n);
     }
 
-    protected void addToHistory(String title) {
+    protected void addToHistory(String title, boolean isRunningDL, boolean isRunningCC) {
         StringBuilder builder = new StringBuilder(title);
         DateFormat dateFormat = new SimpleDateFormat(" @ HH:mm:ss");
         builder.append(dateFormat.format(new Date()));
 
-        historyList.add(new HistoryRow(builder.toString(), false));
+        historyList.add(new HistoryRow(builder.toString(), isRunningDL, isRunningCC));
     }
 
 
@@ -304,7 +303,7 @@ public class MainController extends VBox implements Initializable{
                 c45.buildClassifier(base);
                 Evaluation e = new Evaluation(base);
                 e.crossValidateModel(c45, base, 10, new Random(new Date().getTime()));
-                Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+                Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -314,6 +313,7 @@ public class MainController extends VBox implements Initializable{
 
     protected void runNaiveBayes() throws Exception {
         new Thread(() -> {
+
             int historyIndex = historyList.size() - 1;
             try {
                 NaiveBayes NB = new NaiveBayes();
@@ -321,7 +321,7 @@ public class MainController extends VBox implements Initializable{
 
                 Evaluation e = new Evaluation(base);
                 e.crossValidateModel(NB, base, 10, new Random(new Date().getTime()));
-                Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+                Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -340,7 +340,7 @@ public class MainController extends VBox implements Initializable{
 
                 Evaluation e = new Evaluation(base);
                 e.crossValidateModel(RB, base, 10, new Random(new Date().getTime()));
-                Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+                Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -361,7 +361,7 @@ public class MainController extends VBox implements Initializable{
 
                     Evaluation e = new Evaluation(base);
                     e.crossValidateModel(NN, base, 10, new Random(new Date().getTime()));
-                    Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+                    Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
                 } catch (Exception e) {
                     e.printStackTrace();
                     Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -371,13 +371,24 @@ public class MainController extends VBox implements Initializable{
 
     protected void runDeepLearning() throws Exception {
         new Thread(() -> {
+            int historyIndex = historyList.size() - 1;
 
+            try {
+                Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, null));
+            } catch(Exception e) {
+                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+            }
         }).start();
     }
 
-    protected void finishTaskOfIndex(int index, Evaluation eval) {
-        historyList.get(index).done.set(true);
-        historyList.get(index).setEvaluation(eval);
+    protected void finishDLTaskOfIndex(int index, Evaluation eval) {
+        historyList.get(index).endedDL.set(true);
+        historyList.get(index).evalDL.set(eval);
+    }
+
+    protected void finishCCTaskOfIndex(int index, Evaluation eval) {
+        historyList.get(index).endedCC.set(true);
+        historyList.get(index).evalCC.set(eval);
     }
 
     protected void finishTaskOfIndexWithError(int index) {
