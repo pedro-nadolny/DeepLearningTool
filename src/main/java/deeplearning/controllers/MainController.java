@@ -22,6 +22,7 @@ import javafx.stage.FileChooser;
 
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.rules.OneR;
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
@@ -32,7 +33,6 @@ import weka.classifiers.rules.M5Rules;
 
 import java.io.File;
 import java.net.URL;
-import java.security.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -61,32 +61,38 @@ public class MainController extends VBox implements Initializable{
 
     @FXML private VBox parametersBox;
 
-    private JFXSlider SlideLearningrRateNN;
-    private JFXSlider SlideMomentumNN;
-    private JFXSlider SlideValidationSetSizeNN;
-    private JFXTextField TextFieldHiddenLayersNN;
+    @FXML private JFXSlider sliderConfidenceFactorC45;
+    @FXML private JFXSlider sliderMinLeaftC45;
+
+    private JFXSlider slideLearningrRateNN;
+    private JFXSlider slideMomentumNN;
+    private JFXSlider slideValidationSetSizeNN;
+    private JFXTextField textFieldHiddenLayersNN;
+    
+    private JFXSlider sliderMinBucketSizeRB;
 
     private Instances base;
     private ObservableList<HistoryRow> historyList;
 
-    private Thread mainThread = Thread.currentThread();
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        baseClassComboBox.setVisibleRowCount(6);
+        baseClassComboBox.setVisibleRowCount(7);
 
         historyList = FXCollections.observableArrayList(HistoryRow.extractor());
         historyListView.setItems(historyList);
         historyListView.setCellFactory(studentListView -> new HistoryListViewCell());
 
-        SlideLearningrRateNN = new JFXSlider();
-        SlideMomentumNN = new JFXSlider();
-        SlideValidationSetSizeNN = new JFXSlider();
-        TextFieldHiddenLayersNN = new JFXTextField();
+        slideLearningrRateNN = new JFXSlider();
+        slideMomentumNN = new JFXSlider();
+        slideValidationSetSizeNN = new JFXSlider();
+        textFieldHiddenLayersNN = new JFXTextField();
+        textFieldHiddenLayersNN.setUnFocusColor(Color.WHITE);
+
+        sliderMinBucketSizeRB = new JFXSlider();
+        sliderMinBucketSizeRB.setMax(10);
     }
 
     @FXML protected void handleLoadBase(ActionEvent event) throws Exception {
-
         File f = loadArff();
 
         if (f != null && f.getName().endsWith(".arff")) {
@@ -215,46 +221,57 @@ public class MainController extends VBox implements Initializable{
         StringBuilder builder = new StringBuilder();
 
         if (checkBoxEnableCC.isSelected()) {
+            if(checkBoxEnableDL.isSelected()) {
+                builder.append("DL + ");
+            }
+
             if (radioButtonC45.isSelected()) {
                 builder.append("C4.5");
+                addToHistory(builder.toString());
                 runC45();
 
             } else if (radioButtonNaiveBayes.isSelected()) {
                 builder.append("NB");
+                addToHistory(builder.toString());
                 runNaiveBayes();
 
             } else if (radioButtonNeuralNetwork.isSelected()) {
                 builder.append("NN");
+                addToHistory(builder.toString());
                 runNeuralNetwork();
 
             } else if (radioButtonRuleBased.isSelected()) {
                 builder.append("RB");
+                addToHistory(builder.toString());
                 runRuleBased();
             }
         }
 
         if (checkBoxEnableDL.isSelected()) {
-            builder.insert(0, "DL + ");
+            if(!checkBoxEnableCC.isSelected()) {
+                builder.append("DL");
+                addToHistory(builder.toString());
+            }
+
             runDeepLearning();
         }
-
-        addToHistory(builder.toString());
     }
 
     @FXML protected void updateClassifierOptions(ActionEvent event) throws Exception {
         parametersBox.getChildren().clear();
 
         if(radioButtonC45.isSelected()) {
-
+            addOption("Confidence Factor", sliderConfidenceFactorC45);
+            addOption("Min. intances per leaf", sliderMinLeaftC45);
         } else if(radioButtonNaiveBayes.isSelected()) {
-
+            addOption("No Parameters", null);
         } else if(radioButtonNeuralNetwork.isSelected()) {
-            addOption("Learning Rate", SlideLearningrRateNN);
-            addOption("Momentum", SlideMomentumNN);
-            addOption("Validation Set Size", SlideValidationSetSizeNN);
-            addOption("Hidden Layers", TextFieldHiddenLayersNN);
+            addOption("Learning Rate", slideLearningrRateNN);
+            addOption("Momentum", slideMomentumNN);
+            addOption("Validation Set Size", slideValidationSetSizeNN);
+            addOption("Hidden Layers", textFieldHiddenLayersNN);
         } else if(radioButtonRuleBased.isSelected()) {
-
+            addOption("Min. Bucket Size", sliderMinBucketSizeRB);
         }
     }
 
@@ -265,7 +282,7 @@ public class MainController extends VBox implements Initializable{
         titleLabel.setTextFill(Color.WHITE);
 
         parametersBox.getChildren().add(titleLabel);
-        parametersBox.getChildren().add(n);
+        if(n != null) parametersBox.getChildren().add(n);
     }
 
     protected void addToHistory(String title) {
@@ -278,79 +295,68 @@ public class MainController extends VBox implements Initializable{
 
 
     protected void runC45() throws Exception{
-        Thread thread = new Thread(){
-            public void run(){
-                int historyIndex = historyList.size();
+        new Thread(() -> {
+            int historyIndex = historyList.size() - 1;
+            try {
                 J48 c45 = new J48();
-
-                try {
-                    c45.buildClassifier(base);
-
-                    Evaluation e = new Evaluation(base);
-                    e.crossValidateModel(c45, base, 10, new Random(new Date().getTime()));
-                    Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.out.println("Trace from C45 Thread.");
-                }
+                c45.setConfidenceFactor(((float)sliderConfidenceFactorC45.getValue())/100);
+                c45.setMinNumObj((int)sliderMinLeaftC45.getValue());
+                c45.buildClassifier(base);
+                Evaluation e = new Evaluation(base);
+                e.crossValidateModel(c45, base, 10, new Random(new Date().getTime()));
+                Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
             }
-        };
-
-        thread.start();
+        }).start();
     }
 
     protected void runNaiveBayes() throws Exception {
-        Thread thread = new Thread(){
-            public void run(){
-                int historyIndex = historyList.size() - 1;
+        new Thread(() -> {
+            int historyIndex = historyList.size() - 1;
+            try {
                 NaiveBayes NB = new NaiveBayes();
+                NB.buildClassifier(base);
 
-                try {
-                    NB.buildClassifier(base);
-
-                    Evaluation e = new Evaluation(base);
-                    e.crossValidateModel(NB, base, 10, new Random(new Date().getTime()));
-                    Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.out.println("Trace from NB Thread.");
-                }
+                Evaluation e = new Evaluation(base);
+                e.crossValidateModel(NB, base, 10, new Random(new Date().getTime()));
+                Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
             }
-        };
-
-        thread.start();
+        }).start();
     }
 
     protected void runRuleBased() throws Exception {
-        Thread thread = new Thread(){
-            public void run(){
-                int historyIndex = historyList.size() - 1;
-                M5Rules RB = new M5Rules();
+        new Thread(() -> {
+            int historyIndex = historyList.size() - 1;
 
-                try {
-                    RB.buildClassifier(base);
+            try {
+                OneR RB = new OneR();
+                RB.setMinBucketSize((int)sliderMinBucketSizeRB.getValue());
+                RB.buildClassifier(base);
 
-                    Evaluation e = new Evaluation(base);
-                    e.crossValidateModel(RB, base, 10, new Random(new Date().getTime()));
-                    Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.out.println("Trace from RB Thread.");
-                }
+                Evaluation e = new Evaluation(base);
+                e.crossValidateModel(RB, base, 10, new Random(new Date().getTime()));
+                Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
             }
-        };
-
-        thread.start();
+        }).start();
     }
 
     protected void runNeuralNetwork() throws Exception {
-        Thread thread = new Thread(){
-            public void run(){
-                int historyIndex = historyList.size() - 1;
-                MultilayerPerceptron NN = new MultilayerPerceptron();
-
+        new Thread(() -> {
+            int historyIndex = historyList.size() - 1;
                 try {
+                    MultilayerPerceptron NN = new MultilayerPerceptron();
+                    NN.setLearningRate(slideLearningrRateNN.getValue());
+                    NN.setMomentum(slideMomentumNN.getValue());
+                    NN.setValidationSetSize((int)slideValidationSetSizeNN.getValue());
+                    NN.setHiddenLayers(textFieldHiddenLayersNN.getText());
                     NN.buildClassifier(base);
 
                     Evaluation e = new Evaluation(base);
@@ -358,36 +364,23 @@ public class MainController extends VBox implements Initializable{
                     Platform.runLater(() -> finishTaskOfIndex(historyIndex, e));
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.out.println("Trace from NN Thread.");
+                    Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
                 }
-            }
-        };
-
-        thread.start();
+        }).start();
     }
 
     protected void runDeepLearning() throws Exception {
-//        Thread thread = new Thread(){
-//            public void run(){
-//                int historyIndex = historyList.size() - 1;;
-//                Dl4jMlpClassifier DL = new Dl4jMlpClassifier();
-//
-//                try {
-//                    DL.buildClassifier(base);
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    System.out.println("Trace from DL Thread.");
-//                }
-//
-//                Platform.runLater(() -> finishTaskOfIndex(historyIndex));
-//            }
-//        };
-//
-//        thread.start();
+        new Thread(() -> {
+
+        }).start();
     }
 
     protected void finishTaskOfIndex(int index, Evaluation eval) {
         historyList.get(index).done.set(true);
         historyList.get(index).setEvaluation(eval);
+    }
+
+    protected void finishTaskOfIndexWithError(int index) {
+        historyList.get(index).fail.set(true);
     }
 }

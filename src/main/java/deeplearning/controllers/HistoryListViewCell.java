@@ -15,7 +15,8 @@ import java.rmi.server.ExportException;
 
 public class HistoryListViewCell extends ListCell<HistoryRow> {
     @FXML private Label title;
-    @FXML private ImageView icon;
+    @FXML private ImageView iconFail;
+    @FXML private ImageView iconDone;
     @FXML private JFXSpinner spinner;
     @FXML private HBox box;
 
@@ -47,12 +48,14 @@ public class HistoryListViewCell extends ListCell<HistoryRow> {
         title.setText(item.title.get());
 
         box.getChildren().remove(spinner);
-        box.getChildren().remove(icon);
+        box.getChildren().remove(iconFail);
+        box.getChildren().remove(iconDone);
 
         if (item.done.get()) {
-            box.getChildren().add(0, icon);
+            box.getChildren().add(0, iconDone);
+        } else if(item.fail.get()){
+            box.getChildren().add(0, iconFail);
         } else {
-
             box.getChildren().add(0, spinner);
         }
 

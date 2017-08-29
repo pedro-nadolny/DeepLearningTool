@@ -9,3 +9,7 @@
 .combo-box .list-view .list-cell {
     -fx-text-fill: black
 }
+
+.jfx-text-field {
+    -fx-text-inner-color: white;
+}

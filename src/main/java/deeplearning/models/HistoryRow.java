@@ -15,17 +15,19 @@ public class HistoryRow {
     public StringProperty title = new SimpleStringProperty();
     public BooleanProperty done = new SimpleBooleanProperty();
     private Evaluation eval;
+    public BooleanProperty fail = new SimpleBooleanProperty();;
 
     public HistoryRow(String title, Boolean done) {
         this.title = new SimpleStringProperty(title);
         this.done = new SimpleBooleanProperty(done);
+        this.fail = new SimpleBooleanProperty(false);
     }
 
     public static Callback<HistoryRow, Observable[]> extractor() {
         return new Callback<HistoryRow, Observable[]>() {
             @Override
             public Observable[] call(HistoryRow param) {
-                return new Observable[]{param.title, param.done};
+                return new Observable[]{param.title, param.done, param.fail};
             }
         };
     }
