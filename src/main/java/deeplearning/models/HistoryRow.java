@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.util.Callback;
+import weka.classifiers.Evaluation;
 
 /**
  * Created by Pedro on 6/28/17.
@@ -13,6 +14,7 @@ import javafx.util.Callback;
 public class HistoryRow {
     public StringProperty title = new SimpleStringProperty();
     public BooleanProperty done = new SimpleBooleanProperty();
+    private Evaluation eval;
 
     public HistoryRow(String title, Boolean done) {
         this.title = new SimpleStringProperty(title);
@@ -26,5 +28,9 @@ public class HistoryRow {
                 return new Observable[]{param.title, param.done};
             }
         };
+    }
+
+    public void setEvaluation(Evaluation e) {
+        this.eval = e;
     }
 }

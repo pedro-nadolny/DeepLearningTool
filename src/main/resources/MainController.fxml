@@ -18,7 +18,6 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-
 <StackPane fx:id="root" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="deeplearning.controllers.MainController">
    <children>
       <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="565.0" prefWidth="779.0" style="-fx-padding: 10; -fx-background-color: #0367B4; -fx-spacing: 10;">
@@ -41,9 +40,9 @@
                               <Font name="Roboto Bold" size="16.0" />
                            </font>
                            <graphic>
-                              <ImageView fitHeight="20.0" fitWidth="20.0" onDragDetected="#handleRunButton">
+                              <ImageView fitHeight="20.0" fitWidth="20.0">
                                  <image>
-                                    <Image url="@../images/play_icon.png" />
+                                    <Image url="@images/play_icon.png" />
                                  </image>
                                  <effect>
                                     <ColorAdjust brightness="1.0" />
@@ -142,22 +141,22 @@
                         <JFXCheckBox fx:id="checkBoxEnableCC" checkedColor="#13f64f" selected="true" text="Enable" textFill="WHITE" unCheckedColor="WHITE" />
                         <VBox style="-fx-spacing: 17;">
                            <children>
-                              <JFXRadioButton fx:id="radioButtonC45" selected="true" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="C4.5" textFill="WHITE">
+                              <JFXRadioButton fx:id="radioButtonC45" onAction="#updateClassifierOptions" selected="true" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="C4.5" textFill="WHITE">
                                  <toggleGroup>
                                     <ToggleGroup fx:id="classcClassifierToggleGroup" />
                                  </toggleGroup>
                               </JFXRadioButton>
-                              <JFXRadioButton fx:id="radioButtonNaiveBayes" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="Naïve Bayes" textFill="WHITE" toggleGroup="$classcClassifierToggleGroup">
+                              <JFXRadioButton fx:id="radioButtonNaiveBayes" onAction="#updateClassifierOptions" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="Naïve Bayes" textFill="WHITE" toggleGroup="$classcClassifierToggleGroup">
                                  <font>
                                     <Font name="Roboto Regular" size="13.0" />
                                  </font>
                               </JFXRadioButton>
-                              <JFXRadioButton fx:id="radioButtonRuleBased" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="Rule Based" textFill="WHITE" toggleGroup="$classcClassifierToggleGroup">
+                              <JFXRadioButton fx:id="radioButtonRuleBased" onAction="#updateClassifierOptions" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="Rule Based" textFill="WHITE" toggleGroup="$classcClassifierToggleGroup">
                                  <font>
                                     <Font name="Roboto Regular" size="13.0" />
                                  </font>
                               </JFXRadioButton>
-                              <JFXRadioButton fx:id="radioButtonNeuralNetwork" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="Neural Network" textFill="WHITE" toggleGroup="$classcClassifierToggleGroup">
+                              <JFXRadioButton fx:id="radioButtonNeuralNetwork" onAction="#updateClassifierOptions" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="Neural Network" textFill="WHITE" toggleGroup="$classcClassifierToggleGroup">
                                  <font>
                                     <Font name="Roboto Regular" size="13.0" />
                                  </font>
@@ -169,34 +168,38 @@
                               <Font name="Roboto Regular" size="20.0" />
                            </font>
                         </Label>
-                        <Label text="Learning Rate" textFill="WHITE">
-                           <font>
-                              <Font name="Roboto Regular" size="15.0" />
-                           </font>
-                        </Label>
-                        <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
-                        <Label text="Momentum" textFill="WHITE">
-                           <font>
-                              <Font name="Roboto Regular" size="15.0" />
-                           </font>
-                        </Label>
-                        <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
-                        <Label text="Validation Set Size" textFill="WHITE">
-                           <font>
-                              <Font name="Roboto Regular" size="15.0" />
-                           </font>
-                        </Label>
-                        <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
-                        <Label text="Hidden Layers" textFill="WHITE">
-                           <font>
-                              <Font size="15.0" />
-                           </font>
-                        </Label>
-                        <JFXTextField focusColor="#13f64f" promptText="Enter hidden layer parameters here." style="-fx-text-inner-color: white;" unFocusColor="WHITE">
-                           <font>
-                              <Font name="Roboto Regular" size="13.0" />
-                           </font>
-                        </JFXTextField>
+                        <VBox fx:id="parametersBox" prefHeight="200.0" prefWidth="100.0" style="-fx-spacing: 12;">
+                           <children>
+                              <Label text="Learning Rate" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <Label text="Momentum" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <Label text="Validation Set Size" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <Label text="Hidden Layers" textFill="WHITE">
+                                 <font>
+                                    <Font size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXTextField focusColor="#13f64f" promptText="Enter hidden layer parameters here." style="-fx-text-inner-color: white;" unFocusColor="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="13.0" />
+                                 </font>
+                              </JFXTextField>
+                           </children>
+                        </VBox>
                      </children>
                   </VBox>
                   <VBox prefHeight="308.0" prefWidth="246.0" style="-fx-background-color: #2196F3; -fx-spacing: 10; -fx-padding: 10; -fx-background-radius: 4;">
