@@ -13,6 +13,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -20,8 +21,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 
+import jdk.nashorn.internal.runtime.ECMAException;
+import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.meta.AttributeSelectedClassifier;
 import weka.classifiers.rules.OneR;
 import weka.core.Attribute;
 import weka.core.Instances;
@@ -29,8 +33,8 @@ import weka.core.converters.ConverterUtils.DataSource;
 
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.trees.J48;
-import weka.classifiers.rules.M5Rules;
 
+import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.text.DateFormat;
@@ -38,6 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutionException;
 
 public class MainController extends VBox implements Initializable{
 
@@ -64,8 +69,8 @@ public class MainController extends VBox implements Initializable{
     @FXML private JFXSlider sliderConfidenceFactorC45;
     @FXML private JFXSlider sliderMinLeaftC45;
 
-    private JFXSlider slideLearningrRateNN;
-    private JFXSlider slideMomentumNN;
+    private JFXSlider sliderLearningrRateNN;
+    private JFXSlider sliderMomentumNN;
     private JFXSlider slideValidationSetSizeNN;
     private JFXTextField textFieldHiddenLayersNN;
     
@@ -78,18 +83,128 @@ public class MainController extends VBox implements Initializable{
     public void initialize(URL location, ResourceBundle resources) {
         baseClassComboBox.setVisibleRowCount(7);
 
-        historyList = FXCollections.observableArrayList(HistoryRow.extractor());
-        historyListView.setItems(historyList);
-        historyListView.setCellFactory(studentListView -> new HistoryListViewCell());
+        sliderLearningrRateNN = new JFXSlider();
+        sliderLearningrRateNN.setValue(30);
 
-        slideLearningrRateNN = new JFXSlider();
-        slideMomentumNN = new JFXSlider();
+        sliderMomentumNN = new JFXSlider();
+        sliderMomentumNN.setValue(20);
         slideValidationSetSizeNN = new JFXSlider();
+
         textFieldHiddenLayersNN = new JFXTextField();
         textFieldHiddenLayersNN.setUnFocusColor(Color.WHITE);
+        textFieldHiddenLayersNN.setText("a");
 
         sliderMinBucketSizeRB = new JFXSlider();
         sliderMinBucketSizeRB.setMax(10);
+        sliderMinBucketSizeRB.setValue(6);
+
+        historyList = FXCollections.observableArrayList(HistoryRow.extractor());
+        historyListView.setItems(historyList);
+
+        historyListView.setCellFactory(studentListView -> {
+            HistoryListViewCell cell = new HistoryListViewCell();
+
+            cell.setOnMouseClicked(e -> {
+                cell.updateSelected(false);
+
+                if(e.getClickCount() == 2) {
+                    HistoryRow selectedRow = historyListView.getSelectionModel().getSelectedItems().get(0);
+
+                    if(selectedRow.isRunningCC && !selectedRow.endedCC.get()) {
+                        return;
+                    }
+
+                    if(selectedRow.isRunningDL && !selectedRow.endedDL.get()) {
+                        return;
+                    }
+
+                    if(selectedRow.isRunningCC) {
+                        historyViewPresentCCResults(selectedRow);
+                    } else {
+                        historyViewPresentDLResults(selectedRow);
+                    }
+                }
+            });
+
+            return cell;
+        });
+    }
+
+    protected void historyViewPresentCCResults(HistoryRow row){
+        Evaluation e = row.evalCC;
+        StringBuilder str = new StringBuilder(row.classifier.toString());
+
+        str.append(e.toSummaryString());
+        str.append("\n");
+
+        try {
+            str.append(e.toClassDetailsString());
+            str.append("\n");
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        try {
+            str.append(e.toMatrixString());
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        JFXDialogLayout layout = new JFXDialogLayout();
+        ScrollPane scroll = new ScrollPane(new Text(str.toString()));
+        layout.setBody(scroll);
+
+        JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
+        String buttonTitle;
+        EventHandler<ActionEvent> buttonHandler;
+
+        if(row.isRunningDL) {
+            buttonTitle = "See Deep Learning Results";
+
+            buttonHandler = new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    JFXDialogLayout layout = new JFXDialogLayout();
+                    JFXDialog dialogDL = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
+                    layout.setBody(new Text("DEEP LEARNING RESULTS"));
+                    JFXButton closeButton = new JFXButton("Close".toUpperCase());
+                    closeButton.setTextFill(Color.WHITE);
+                    closeButton.setStyle("-fx-background-color: #2198F3");
+
+                    closeButton.setOnAction(new EventHandler<ActionEvent>() {
+                        @Override
+                        public void handle(ActionEvent event) {
+                            dialogDL.close();
+                        }
+                    });
+
+                    layout.setActions(closeButton);
+                    dialog.close();
+                    dialogDL.show();
+                }
+            };
+        } else {
+            buttonTitle = "Close";
+            buttonHandler = new EventHandler<ActionEvent>() {
+
+                @Override
+                public void handle(ActionEvent event) {
+                    dialog.close();
+                }
+            };
+        }
+
+        JFXButton closeButton = new JFXButton(buttonTitle.toUpperCase());
+        closeButton.setTextFill(Color.WHITE);
+        closeButton.setStyle("-fx-background-color: #2198F3");
+        closeButton.setOnAction(buttonHandler);
+        layout.setActions(closeButton);
+
+        dialog.show();
+    }
+
+    protected void historyViewPresentDLResults(HistoryRow row){
+
     }
 
     @FXML protected void handleLoadBase(ActionEvent event) throws Exception {
@@ -188,17 +303,17 @@ public class MainController extends VBox implements Initializable{
 
     @FXML protected void handleRunButton(ActionEvent event) throws Exception {
 
-        boolean showDialog = false;
+        boolean showDialog = true;
         JFXDialogLayout layout = new JFXDialogLayout();
 
         if(base == null) {
-            showDialog = true;
             layout.setBody(new Text("Load a base file before you run." +
                     "\nYou can load a base file with the button on the top-left."));
         } else if (!checkBoxEnableDL.isSelected() && !checkBoxEnableCC.isSelected()) {
-            showDialog = true;
             layout.setBody(new Text("Select a classification training method to use." +
                     "\nEnable at least one with the checkbox on either\nDEEP LEARNING or CLASSIC CLASSFICATION."));
+        } else {
+            showDialog = false;
         }
 
         if (showDialog) {
@@ -218,42 +333,70 @@ public class MainController extends VBox implements Initializable{
             return;
         }
 
-        StringBuilder builder = new StringBuilder();
+        HistoryRow r = new HistoryRow(checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
+
+        Thread ccThread = new Thread();
 
         if (checkBoxEnableCC.isSelected()) {
-            if(checkBoxEnableDL.isSelected()) {
-                builder.append("DL + ");
-            }
-
             if (radioButtonC45.isSelected()) {
-                builder.append("C4.5");
-                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
-                runC45();
+                ccThread = new Thread(() -> {
+                    try {
+                        runC45();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                });
 
+                r.classicalType = HistoryRow.CCType.C45;
             } else if (radioButtonNaiveBayes.isSelected()) {
-                builder.append("NB");
-                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
+                ccThread = new Thread(() -> {
+                    try {
+                        runNaiveBayes();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                });
 
+                r.classicalType = HistoryRow.CCType.NB;
             } else if (radioButtonNeuralNetwork.isSelected()) {
-                builder.append("NN");
-                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
-                runNeuralNetwork();
+                ccThread = new Thread(() -> {
+                    try {
+                        runNeuralNetwork();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                });
 
+                r.classicalType = HistoryRow.CCType.NN;
             } else if (radioButtonRuleBased.isSelected()) {
-                builder.append("RB");
-                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
-                runRuleBased();
+                ccThread = new Thread(() -> {
+                    try {
+                        runRuleBased();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+
+                r.classicalType = HistoryRow.CCType.RB;
             }
         }
+
+        Thread dlThread = new Thread();
+
 
         if (checkBoxEnableDL.isSelected()) {
-            if(!checkBoxEnableCC.isSelected()) {
-                builder.append("DL");
-                addToHistory(builder.toString(), checkBoxEnableDL.isSelected(), checkBoxEnableCC.isSelected());
-            }
-
-            runDeepLearning();
+            dlThread = new Thread(() -> {
+                try {
+                    runDeepLearning();
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            });
         }
+
+        historyList.add(r);
+        dlThread.start();
+        ccThread.start();
     }
 
     @FXML protected void updateClassifierOptions(ActionEvent event) throws Exception {
@@ -265,8 +408,8 @@ public class MainController extends VBox implements Initializable{
         } else if(radioButtonNaiveBayes.isSelected()) {
             addOption("No Parameters", null);
         } else if(radioButtonNeuralNetwork.isSelected()) {
-            addOption("Learning Rate", slideLearningrRateNN);
-            addOption("Momentum", slideMomentumNN);
+            addOption("Learning Rate", sliderLearningrRateNN);
+            addOption("Momentum", sliderMomentumNN);
             addOption("Validation Set Size", slideValidationSetSizeNN);
             addOption("Hidden Layers", textFieldHiddenLayersNN);
         } else if(radioButtonRuleBased.isSelected()) {
@@ -284,111 +427,92 @@ public class MainController extends VBox implements Initializable{
         if(n != null) parametersBox.getChildren().add(n);
     }
 
-    protected void addToHistory(String title, boolean isRunningDL, boolean isRunningCC) {
-        StringBuilder builder = new StringBuilder(title);
-        DateFormat dateFormat = new SimpleDateFormat(" @ HH:mm:ss");
-        builder.append(dateFormat.format(new Date()));
-
-        historyList.add(new HistoryRow(builder.toString(), isRunningDL, isRunningCC));
-    }
-
-
     protected void runC45() throws Exception{
-        new Thread(() -> {
-            int historyIndex = historyList.size() - 1;
-            try {
-                J48 c45 = new J48();
-                c45.setConfidenceFactor(((float)sliderConfidenceFactorC45.getValue())/100);
-                c45.setMinNumObj((int)sliderMinLeaftC45.getValue());
-                c45.buildClassifier(base);
-                Evaluation e = new Evaluation(base);
-                e.crossValidateModel(c45, base, 10, new Random(new Date().getTime()));
-                Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
-            }
-        }).start();
+        int historyIndex = historyList.size() - 1;
+
+        try {
+            J48 c45 = new J48();
+            c45.setConfidenceFactor(((float)sliderConfidenceFactorC45.getValue())/100);
+            c45.setMinNumObj((int)sliderMinLeaftC45.getValue());
+            c45.buildClassifier(base);
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(c45, base, 10, new Random(1));
+            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, c45));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+        }
     }
 
     protected void runNaiveBayes() throws Exception {
-        new Thread(() -> {
-
-            int historyIndex = historyList.size() - 1;
-            try {
-                NaiveBayes NB = new NaiveBayes();
-                NB.buildClassifier(base);
-
-                Evaluation e = new Evaluation(base);
-                e.crossValidateModel(NB, base, 10, new Random(new Date().getTime()));
-                Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
-            }
-        }).start();
+        int historyIndex = historyList.size() - 1;
+        try {
+            NaiveBayes NB = new NaiveBayes();
+            NB.buildClassifier(base);
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(NB, base, 10, new Random(1));
+            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, NB));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+        }
     }
 
     protected void runRuleBased() throws Exception {
-        new Thread(() -> {
-            int historyIndex = historyList.size() - 1;
+        int historyIndex = historyList.size() - 1;
 
-            try {
-                OneR RB = new OneR();
-                RB.setMinBucketSize((int)sliderMinBucketSizeRB.getValue());
-                RB.buildClassifier(base);
+        try {
+            OneR RB = new OneR();
+            RB.setMinBucketSize((int)sliderMinBucketSizeRB.getValue());
+            RB.buildClassifier(base);
 
-                Evaluation e = new Evaluation(base);
-                e.crossValidateModel(RB, base, 10, new Random(new Date().getTime()));
-                Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
-            }
-        }).start();
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(RB, base, 10, new Random(1));
+            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, RB));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+        }
     }
 
     protected void runNeuralNetwork() throws Exception {
-        new Thread(() -> {
-            int historyIndex = historyList.size() - 1;
-                try {
-                    MultilayerPerceptron NN = new MultilayerPerceptron();
-                    NN.setLearningRate(slideLearningrRateNN.getValue());
-                    NN.setMomentum(slideMomentumNN.getValue());
-                    NN.setValidationSetSize((int)slideValidationSetSizeNN.getValue());
-                    NN.setHiddenLayers(textFieldHiddenLayersNN.getText());
-                    NN.buildClassifier(base);
+        int historyIndex = historyList.size() - 1;
+        try {
+            MultilayerPerceptron NN = new MultilayerPerceptron();
+            NN.setLearningRate(sliderLearningrRateNN.getValue()/100);
+            NN.setMomentum(sliderMomentumNN.getValue()/100);
+            NN.setValidationSetSize((int)slideValidationSetSizeNN.getValue());
+            NN.setHiddenLayers(textFieldHiddenLayersNN.getText());
+            NN.buildClassifier(base);
 
-                    Evaluation e = new Evaluation(base);
-                    e.crossValidateModel(NN, base, 10, new Random(new Date().getTime()));
-                    Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
-                }
-        }).start();
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(NN, base, 10, new Random(1));
+            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, NN));
+        } catch (Exception e) {
+            e.printStackTrace();
+            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+        }
     }
 
     protected void runDeepLearning() throws Exception {
-        new Thread(() -> {
-            int historyIndex = historyList.size() - 1;
+        int historyIndex = historyList.size() - 1;
 
-            try {
-                Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, null));
-            } catch(Exception e) {
-                Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
-            }
-        }).start();
+        try {
+            Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, null));
+        } catch(Exception e) {
+            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+        }
     }
 
     protected void finishDLTaskOfIndex(int index, Evaluation eval) {
         historyList.get(index).endedDL.set(true);
-        historyList.get(index).evalDL.set(eval);
+        historyList.get(index).evalDL = eval;
     }
 
-    protected void finishCCTaskOfIndex(int index, Evaluation eval) {
+    protected void finishCCTaskOfIndex(int index, Evaluation eval, Classifier c) {
         historyList.get(index).endedCC.set(true);
-        historyList.get(index).evalCC.set(eval);
+        historyList.get(index).evalCC = eval;
+        historyList.get(index).classifier = c;
     }
 
     protected void finishTaskOfIndexWithError(int index) {

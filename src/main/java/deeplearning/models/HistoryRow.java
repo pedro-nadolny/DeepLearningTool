@@ -6,37 +6,52 @@ import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.util.Callback;
+import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
+
+import java.util.Date;
 
 /**
  * Created by Pedro on 6/28/17.
  */
 public class HistoryRow {
-    public StringProperty title = new SimpleStringProperty();
-    public BooleanProperty fail = new SimpleBooleanProperty();
-    public BooleanProperty isRunningDL = new SimpleBooleanProperty();
-    public BooleanProperty isRunningCC = new SimpleBooleanProperty();
-    public BooleanProperty endedCC = new SimpleBooleanProperty();
-    public BooleanProperty endedDL = new SimpleBooleanProperty();
+    public BooleanProperty fail = new SimpleBooleanProperty(false);
+    public BooleanProperty endedCC = new SimpleBooleanProperty(false);
+    public BooleanProperty endedDL = new SimpleBooleanProperty(false);
 
-    public ObjectProperty<Evaluation> evalDL = new SimpleObjectProperty<Evaluation>();
-    public ObjectProperty<Evaluation> evalCC = new SimpleObjectProperty<Evaluation>();
+    public Evaluation evalDL;
+    public Evaluation evalCC;
 
-    public HistoryRow(String title, boolean isRunningDL, boolean isRunningCC) {
-        this.title.set(title);
-        this.fail.set(false);
-        this.isRunningDL.set(isRunningDL);
-        this.isRunningCC.set(isRunningCC);
-        this.endedCC.set(false);
-        this.endedDL.set(false);
+    public boolean isRunningDL;
+    public boolean isRunningCC;
+
+    public Classifier classifier;
+
+    public CCType classicalType;
+
+    public Date startTime;
+
+    public HistoryRow(boolean isRunningDL, boolean isRunningCC) {
+        this.isRunningDL = isRunningDL;
+        this.isRunningCC = isRunningCC;
+        this.startTime = new Date();
     }
 
     public static Callback<HistoryRow, Observable[]> extractor() {
-        return new Callback<HistoryRow, Observable[]>() {
+        return new Callback<HistoryRow, Observable[]>()  {
             @Override
             public Observable[] call(HistoryRow param) {
-                return new Observable[]{param.title, param.fail, param.endedCC, param.endedDL, param.isRunningDL, param.isRunningCC};
+                return new Observable[]{param.endedCC, param.endedDL, param.fail};
             }
         };
+    }
+
+    public enum CCType {
+        C45(0), NN(1), RB(2), NB(3);
+
+        public int type;
+        CCType(int t) {
+            this.type = t;
+        }
     }
 }

@@ -6,12 +6,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 
-import java.io.IOException;
-import java.rmi.server.ExportException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 public class HistoryListViewCell extends ListCell<HistoryRow> {
     @FXML private Label title;
@@ -45,14 +44,42 @@ public class HistoryListViewCell extends ListCell<HistoryRow> {
             spinner.setRadius(10);
         }
 
-        title.setText(item.title.get());
-
         box.getChildren().remove(spinner);
         box.getChildren().remove(iconFail);
         box.getChildren().remove(iconDone);
 
-        boolean ended = item.endedCC.get() && !item.isRunningDL.get();
-        ended = ended || (item.endedDL.get() && !item.isRunningCC.get());
+        StringBuilder titleStr = new StringBuilder();
+
+        if(item.isRunningDL) {
+            titleStr.append("DL ");
+
+            if(item.isRunningCC) {
+                titleStr.append("+ ");
+            }
+        }
+
+        if(item.isRunningCC) {
+            switch (item.classicalType) {
+                case NB: titleStr.append("NB ");
+                    break;
+
+                case NN: titleStr.append("NN ");
+                    break;
+
+                case RB: titleStr.append("RB ");
+                    break;
+
+                case C45: titleStr.append("C45 ");
+                    break;
+            }
+        }
+
+        DateFormat dateFormat = new SimpleDateFormat("@ HH:mm:ss");
+        titleStr.append(dateFormat.format(item.startTime));
+        title.setText(titleStr.toString());
+
+        boolean ended = item.endedCC.get() && !item.isRunningDL;
+        ended = ended || (item.endedDL.get() && !item.isRunningCC);
         ended = ended || (item.endedDL.get() && item.endedCC.get());
 
         if (ended) {

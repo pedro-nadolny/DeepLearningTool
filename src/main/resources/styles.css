@@ -13,3 +13,8 @@
 .jfx-text-field {
     -fx-text-inner-color: white;
 }
+
+.jfx-list-cell:filled:selected {
+    -fx-background-color: transparent ,-fx-box-border,-fx-control-inner-background;
+    -fx-background-insets: 0 ;
+}

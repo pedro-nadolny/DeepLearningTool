@@ -17,7 +17,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<StackPane fx:id="root" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="deeplearning.controllers.MainController">
+<StackPane fx:id="root" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="deeplearning.controllers.MainController">
    <children>
       <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="587.0" prefWidth="778.0" style="-fx-padding: 10; -fx-background-color: #0367B4; -fx-spacing: 10;">
          <children>
@@ -174,13 +174,13 @@
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider fx:id="sliderConfidenceFactorC45" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <JFXSlider fx:id="sliderConfidenceFactorC45" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="25.0" />
                               <Label text="Min. intances per leaf" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider fx:id="sliderMinLeaftC45" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" max="10.0" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="5.0" />
+                              <JFXSlider fx:id="sliderMinLeaftC45" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" max="10.0" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="2.0" />
                            </children>
                         </VBox>
                      </children>

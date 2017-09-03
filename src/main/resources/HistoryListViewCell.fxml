@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox fx:id="box" alignment="CENTER_LEFT" maxHeight="40.0" prefHeight="40.0" prefWidth="200.0" style="-fx-spacing: 10;" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1">
+<HBox fx:id="box" alignment="CENTER_LEFT" maxHeight="40.0" prefHeight="40.0" prefWidth="200.0" style="-fx-spacing: 10;" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <JFXSpinner fx:id="spinner" />
       <ImageView fx:id="iconFail" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
