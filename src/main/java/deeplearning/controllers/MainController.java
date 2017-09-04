@@ -11,6 +11,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -134,8 +135,7 @@ public class MainController extends VBox implements Initializable{
         Evaluation e = row.evalCC;
         StringBuilder str = new StringBuilder(row.classifier.toString());
 
-        str.append(e.toSummaryString());
-        str.append("\n");
+        str.append("\n=== Classifier Statistics Summary ===\n" +e.toSummaryString() + "\n");
 
         try {
             str.append(e.toClassDetailsString());
@@ -152,9 +152,15 @@ public class MainController extends VBox implements Initializable{
 
         JFXDialogLayout layout = new JFXDialogLayout();
         ScrollPane scroll = new ScrollPane(new Text(str.toString()));
+        scroll.setPadding(new Insets(8, 8,8,8));
+
+
         layout.setBody(scroll);
+        layout.setMinWidth(665);
 
         JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
+
+        scroll.setFitToWidth(true);
         String buttonTitle;
         EventHandler<ActionEvent> buttonHandler;
 
