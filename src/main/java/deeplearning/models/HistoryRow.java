@@ -25,7 +25,8 @@ public class HistoryRow {
     public boolean isRunningDL;
     public boolean isRunningCC;
 
-    public Classifier classifier;
+    public Classifier classifierCC;
+    public Classifier classifierDL;
 
     public CCType classicalType;
 
@@ -44,6 +45,48 @@ public class HistoryRow {
                 return new Observable[]{param.endedCC, param.endedDL, param.fail};
             }
         };
+    }
+
+    public String getResultsTextCC() {
+        StringBuilder str = new StringBuilder(this.classifierCC.toString());
+
+        str.append("\n=== Classifier Statistics Summary ===\n" +evalCC.toSummaryString() + "\n");
+
+        try {
+            str.append(evalCC.toClassDetailsString());
+            str.append("\n");
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        try {
+            str.append(evalCC.toMatrixString());
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        return str.toString();
+    }
+
+    public String getResultsTextDL() {
+        StringBuilder str = new StringBuilder(this.classifierDL.toString());
+
+        str.append("\n=== Classifier Statistics Summary ===\n" +evalDL.toSummaryString() + "\n");
+
+        try {
+            str.append(evalDL.toClassDetailsString());
+            str.append("\n");
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        try {
+            str.append(evalDL.toMatrixString());
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        return str.toString();
     }
 
     public enum CCType {

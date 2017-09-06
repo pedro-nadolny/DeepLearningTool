@@ -61,35 +61,41 @@
                            <children>
                               <HBox alignment="CENTER_LEFT" style="-fx-background-radius: 8;">
                                  <children>
-                                    <Label prefHeight="27.0" prefWidth="156.0" text="DEEP LEARNING" textFill="WHITE">
+                                    <Label prefHeight="27.0" prefWidth="202.0" text="DEEP LEARNING" textFill="WHITE">
                                        <font>
                                           <Font name="Roboto Regular" size="20.0" />
                                        </font>
                                     </Label>
+                                    <JFXCheckBox fx:id="checkBoxEnableDL" checkedColor="#13f64f" selected="true" text=" " textAlignment="JUSTIFY" textFill="WHITE" unCheckedColor="WHITE" />
                                  </children>
                               </HBox>
-                              <JFXCheckBox fx:id="checkBoxEnableDL" checkedColor="#13f64f" selected="true" text="Enable" textFill="WHITE" unCheckedColor="WHITE" />
                               <Label text="Learning Rate" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <JFXSlider fx:id="sliderLearningRateDL" blendMode="SRC_ATOP" blockIncrement="0.01" majorTickUnit="0.01" max="1.0" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="0.3" />
                               <Label text="Momentum" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <JFXSlider fx:id="sliderMomentumDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
                               <Label text="Regularization Constant" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <JFXSlider fx:id="sliderRegularizationConstantDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
+                              <Label text="Number of Conv. Layers" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXSlider fx:id="sliderNumberOfConvLayersDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" max="10.0" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="5.0" />
                            </children>
                         </VBox>
-                        <VBox prefHeight="308.0" prefWidth="246.0" style="-fx-background-color: #2198F3; -fx-spacing: 10; -fx-padding: 10; -fx-background-radius: 4;">
+                        <VBox prefHeight="44.0" prefWidth="246.0" style="-fx-background-color: #2198F3; -fx-spacing: 10; -fx-padding: 10; -fx-background-radius: 4;">
                            <children>
                               <Label prefHeight="27.0" prefWidth="208.0" text="BASE" textFill="WHITE">
                                  <font>
@@ -132,12 +138,16 @@
                   </VBox>
                   <VBox prefHeight="308.0" prefWidth="246.0" style="-fx-background-color: #2294F2; -fx-spacing: 10; -fx-padding: 10; -fx-background-radius: 4;">
                      <children>
-                        <Label prefHeight="27.0" prefWidth="208.0" text="CLASSIC CLASSIFIER" textFill="WHITE">
-                           <font>
-                              <Font name="Roboto Regular" size="20.0" />
-                           </font>
-                        </Label>
-                        <JFXCheckBox fx:id="checkBoxEnableCC" checkedColor="#13f64f" selected="true" text="Enable" textFill="WHITE" unCheckedColor="WHITE" />
+                        <HBox alignment="CENTER_LEFT" prefHeight="0.0" prefWidth="226.0">
+                           <children>
+                              <Label prefHeight="34.0" prefWidth="186.0" text="CLASSIC CLASSIFIER" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="18.0" />
+                                 </font>
+                              </Label>
+                              <JFXCheckBox fx:id="checkBoxEnableCC" checkedColor="#13f64f" prefHeight="17.0" prefWidth="0.0" selected="true" text=" " textFill="WHITE" unCheckedColor="WHITE" />
+                           </children>
+                        </HBox>
                         <VBox style="-fx-spacing: 17;">
                            <children>
                               <JFXRadioButton fx:id="radioButtonC45" onAction="#updateClassifierOptions" selected="true" style="-jfx-selected-color: #13F64F; -jfx-unselected-color: white;" text="C4.5" textFill="WHITE">

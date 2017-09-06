@@ -22,11 +22,10 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 
-import jdk.nashorn.internal.runtime.ECMAException;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.meta.AttributeSelectedClassifier;
+import weka.classifiers.functions.Dl4jMlpClassifier;
 import weka.classifiers.rules.OneR;
 import weka.core.Attribute;
 import weka.core.Instances;
@@ -35,15 +34,11 @@ import weka.core.converters.ConverterUtils.DataSource;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.trees.J48;
 
-import javax.swing.*;
 import java.io.File;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.concurrent.ExecutionException;
+
 
 public class MainController extends VBox implements Initializable{
 
@@ -69,6 +64,11 @@ public class MainController extends VBox implements Initializable{
 
     @FXML private JFXSlider sliderConfidenceFactorC45;
     @FXML private JFXSlider sliderMinLeaftC45;
+
+    @FXML private JFXSlider sliderLearningRateDL;
+    @FXML private JFXSlider sliderMomentumDL;
+    @FXML private JFXSlider sliderRegularizationConstantDL;
+    @FXML private JFXSlider sliderNumberOfConvLayersDL;
 
     private JFXSlider sliderLearningrRateNN;
     private JFXSlider sliderMomentumNN;
@@ -132,35 +132,18 @@ public class MainController extends VBox implements Initializable{
     }
 
     protected void historyViewPresentCCResults(HistoryRow row){
-        Evaluation e = row.evalCC;
-        StringBuilder str = new StringBuilder(row.classifier.toString());
 
-        str.append("\n=== Classifier Statistics Summary ===\n" +e.toSummaryString() + "\n");
-
-        try {
-            str.append(e.toClassDetailsString());
-            str.append("\n");
-        } catch (Exception excp) {
-            excp.printStackTrace();
-        }
-
-        try {
-            str.append(e.toMatrixString());
-        } catch (Exception excp) {
-            excp.printStackTrace();
-        }
 
         JFXDialogLayout layout = new JFXDialogLayout();
-        ScrollPane scroll = new ScrollPane(new Text(str.toString()));
+        ScrollPane scroll = new ScrollPane(new Text(row.getResultsTextCC()));
         scroll.setPadding(new Insets(8, 8,8,8));
-
+        scroll.setFitToWidth(true);
 
         layout.setBody(scroll);
         layout.setMinWidth(665);
 
         JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
 
-        scroll.setFitToWidth(true);
         String buttonTitle;
         EventHandler<ActionEvent> buttonHandler;
 
@@ -171,12 +154,19 @@ public class MainController extends VBox implements Initializable{
                 @Override
                 public void handle(ActionEvent event) {
                     JFXDialogLayout layout = new JFXDialogLayout();
+
+                    ScrollPane scroll = new ScrollPane(new Text(row.getResultsTextDL()));
+                    scroll.setPadding(new Insets(8, 8,8,8));
+                    scroll.setFitToWidth(true);
+
+                    layout.setBody(scroll);
+                    layout.setMinWidth(665);
+
                     JFXDialog dialogDL = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
-                    layout.setBody(new Text("DEEP LEARNING RESULTS"));
+
                     JFXButton closeButton = new JFXButton("Close".toUpperCase());
                     closeButton.setTextFill(Color.WHITE);
                     closeButton.setStyle("-fx-background-color: #2198F3");
-
                     closeButton.setOnAction(new EventHandler<ActionEvent>() {
                         @Override
                         public void handle(ActionEvent event) {
@@ -504,21 +494,27 @@ public class MainController extends VBox implements Initializable{
         int historyIndex = historyList.size() - 1;
 
         try {
-            Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, null));
-        } catch(Exception e) {
+        Dl4jMlpClassifier DL = new Dl4jMlpClassifier();
+        DL.buildClassifier(base);
+        Evaluation e = new Evaluation(base);
+        e.crossValidateModel(DL, base, 10, new Random(1));
+
+            Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, e, DL));
+        } catch(Exception _) {
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
         }
     }
 
-    protected void finishDLTaskOfIndex(int index, Evaluation eval) {
+    protected void finishDLTaskOfIndex(int index, Evaluation eval, Classifier c) {
         historyList.get(index).endedDL.set(true);
         historyList.get(index).evalDL = eval;
+        historyList.get(index).classifierDL = c;
     }
 
     protected void finishCCTaskOfIndex(int index, Evaluation eval, Classifier c) {
         historyList.get(index).endedCC.set(true);
         historyList.get(index).evalCC = eval;
-        historyList.get(index).classifier = c;
+        historyList.get(index).classifierCC = c;
     }
 
     protected void finishTaskOfIndexWithError(int index) {
