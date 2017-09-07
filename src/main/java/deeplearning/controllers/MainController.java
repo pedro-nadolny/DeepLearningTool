@@ -2,11 +2,14 @@ package deeplearning.controllers;
 
 import com.jfoenix.controls.*;
 
+import com.sun.javafx.collections.ImmutableObservableList;
+import com.sun.javafx.collections.ObservableListWrapper;
 import deeplearning.models.HistoryRow;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableListBase;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -22,6 +25,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.nd4j.linalg.activations.IActivation;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
@@ -29,13 +35,19 @@ import weka.classifiers.functions.Dl4jMlpClassifier;
 import weka.classifiers.rules.OneR;
 import weka.core.Attribute;
 import weka.core.Instances;
+import weka.core.SelectedTag;
 import weka.core.converters.ConverterUtils.DataSource;
 
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.classifiers.trees.J48;
+import weka.dl4j.activations.ActivationIdentity;
+import weka.dl4j.layers.BatchNormalization;
+import weka.dl4j.layers.ConvolutionLayer;
+import weka.dl4j.layers.SubsamplingLayer;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.ResourceBundle;
 
@@ -70,6 +82,13 @@ public class MainController extends VBox implements Initializable{
     @FXML private JFXSlider sliderRegularizationConstantDL;
     @FXML private JFXSlider sliderNumberOfConvLayersDL;
 
+    @FXML private JFXSlider sliderKernelXDL;
+    @FXML private JFXSlider sliderKernelYDL;
+
+    @FXML private JFXSlider sliderNumberOfEpochsDL;
+
+    @FXML private JFXComboBox poolingTypeComboBox;
+
     private JFXSlider sliderLearningrRateNN;
     private JFXSlider sliderMomentumNN;
     private JFXSlider slideValidationSetSizeNN;
@@ -84,8 +103,13 @@ public class MainController extends VBox implements Initializable{
     public void initialize(URL location, ResourceBundle resources) {
         baseClassComboBox.setVisibleRowCount(7);
 
+        ObservableList<String> pooling = new ImmutableObservableList<>("MAX","SUM","AVG","PNORM");
+        poolingTypeComboBox.setItems(pooling);
+        poolingTypeComboBox.setValue("MAX");
+
         sliderLearningrRateNN = new JFXSlider();
         sliderLearningrRateNN.setValue(30);
+
 
         sliderMomentumNN = new JFXSlider();
         sliderMomentumNN.setValue(20);
@@ -494,16 +518,68 @@ public class MainController extends VBox implements Initializable{
         int historyIndex = historyList.size() - 1;
 
         try {
-        Dl4jMlpClassifier DL = new Dl4jMlpClassifier();
-        DL.buildClassifier(base);
-        Evaluation e = new Evaluation(base);
-        e.crossValidateModel(DL, base, 10, new Random(1));
+            Dl4jMlpClassifier DL = new Dl4jMlpClassifier();
 
+            int nLayers = (int) sliderNumberOfConvLayersDL.getValue();
+            ArrayList<Layer> layers = new ArrayList<Layer>();
+
+            for(int i = 0; i < nLayers; i++) {
+                ConvolutionLayer l = new ConvolutionLayer();
+                l.setLearningRate(sliderLearningRateDL.getValue()/100);
+                l.setMomentum(sliderMomentumDL.getValue()/100);
+                l.setKernelSizeX((int)sliderKernelXDL.getValue());
+                l.setKernelSizeX((int)sliderKernelYDL.getValue());
+                l.setStrideX(2);
+                l.setStrideY(2);
+                l.setPaddingX(2);
+                l.setPaddingY(2);
+                l.setLayerName(i + " Conv Layer");
+
+                SubsamplingLayer sb = new SubsamplingLayer();
+                sb.setStrideX(2);
+                sb.setStrideY(2);
+                sb.setKernelSizeX(2);
+                sb.setKernelSizeY(2);
+                sb.setLayerName(i + "Pooling Layer");
+                sb.setActivationFn(new ActivationIdentity());
+                sb.setActivationFunction(new org.nd4j.linalg.activations.impl.ActivationIdentity());
+
+                System.out.println(poolingTypeComboBox.getValue());
+
+                switch((String)poolingTypeComboBox.getValue()) {
+                    case "MIN":
+                        sb.setPoolingType(PoolingType.SUM);
+                        break;
+
+                    case "AVG":
+                        sb.setPoolingType(PoolingType.AVG);
+                        break;
+
+                    case "PNORM":
+                        sb.setPoolingType(PoolingType.PNORM);
+                        break;
+
+                    case "MAX":
+                        sb.setPoolingType(PoolingType.MAX);
+                        break;
+                }
+
+                layers.add(l);
+                layers.add(sb);
+            }
+
+            DL.setLayers((Layer[]) layers.toArray());
+            DL.setNumEpochs((int)sliderNumberOfEpochsDL.getValue());
+
+            DL.buildClassifier(base);
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(DL, base, 10, new Random(1));
             Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, e, DL));
         } catch(Exception _) {
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
         }
     }
+
 
     protected void finishDLTaskOfIndex(int index, Evaluation eval, Classifier c) {
         historyList.get(index).endedDL.set(true);
