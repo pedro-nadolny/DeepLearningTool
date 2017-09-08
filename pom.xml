@@ -9,38 +9,48 @@
 
     <dependencies>
 
-        <!-- https://mvnrepository.com/artifact/com.jfoenix/jfoenix -->
         <dependency>
             <groupId>com.jfoenix</groupId>
             <artifactId>jfoenix</artifactId>
             <version>1.4.0</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/nz.ac.waikato.cms.weka/weka-stable -->
         <dependency>
             <groupId>nz.ac.waikato.cms.weka</groupId>
             <artifactId>weka-stable</artifactId>
             <version>3.8.1</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.deeplearning4j/deeplearning4j-core -->
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>0.9.1</version>
+            <artifactId>deeplearning4j-nn</artifactId>
+            <version>0.8.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-platform</artifactId>
-            <version>0.9.1</version>
+            <artifactId>nd4j-cuda-8.0</artifactId>
+            <version>0.8.0</version>
         </dependency>
 
         <dependency>
-            <groupId>wekaDeepLearning4j</groupId>
-            <artifactId>wekaDeepLearning4j</artifactId>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>0.8.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>wekaDL4J</groupId>
+            <artifactId>wekaDL4J</artifactId>
             <version>1</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+
     </dependencies>
 
     <build>
