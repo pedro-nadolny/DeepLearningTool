@@ -6,6 +6,7 @@
 <?import com.jfoenix.controls.JFXListView?>
 <?import com.jfoenix.controls.JFXRadioButton?>
 <?import com.jfoenix.controls.JFXSlider?>
+<?import com.jfoenix.controls.JFXTextField?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ToggleGroup?>
@@ -57,7 +58,7 @@
                <children>
                   <VBox prefHeight="543.0" prefWidth="246.0" style="-fx-spacing: 10;">
                      <children>
-                        <VBox prefHeight="509.0" prefWidth="246.0" style="-fx-background-color: #2198F3; -fx-spacing: 12; -fx-padding: 10; -fx-background-radius: 4;">
+                        <VBox fx:id="textFieldHiddenLayersNN" prefHeight="509.0" prefWidth="246.0" style="-fx-background-color: #2198F3; -fx-spacing: 12; -fx-padding: 10; -fx-background-radius: 4;">
                            <children>
                               <HBox alignment="CENTER_LEFT" style="-fx-background-radius: 8;">
                                  <children>
@@ -75,18 +76,12 @@
                                  </font>
                               </Label>
                               <JFXSlider fx:id="sliderLearningRateDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="30.0" />
-                              <Label text="Momentum" textFill="WHITE">
+                              <Label text="Number of Iterations" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider fx:id="sliderMomentumDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="50.0" />
-                              <Label text="Number of Conv. Layers" textFill="WHITE">
-                                 <font>
-                                    <Font name="Roboto Regular" size="15.0" />
-                                 </font>
-                              </Label>
-                              <JFXSlider fx:id="sliderNumberOfConvLayersDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" max="10.0" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="5.0" />
+                              <JFXSlider fx:id="sliderNumberOfIterationsDL" value="10.0" />
                               <HBox prefHeight="51.0" prefWidth="226.0" style="-fx-spacing: 8;">
                                  <children>
                                     <VBox prefHeight="51.0" prefWidth="120.0" style="-fx-spacing: 12;">
@@ -96,7 +91,7 @@
                                                 <Font name="Roboto Regular" size="15.0" />
                                              </font>
                                           </Label>
-                                          <JFXSlider fx:id="sliderKernelXDL" blockIncrement="1.0" max="10.0" value="5.0" />
+                                          <JFXSlider fx:id="sliderKernelXDL" blockIncrement="1.0" max="10.0" value="2.0" />
                                        </children>
                                     </VBox>
                                     <VBox prefHeight="69.0" prefWidth="112.0" style="-fx-spacing: 12;">
@@ -106,27 +101,41 @@
                                                 <Font name="Roboto Regular" size="15.0" />
                                              </font>
                                           </Label>
-                                          <JFXSlider fx:id="sliderKernelYDL" blockIncrement="1.0" max="10.0" value="5.0" />
+                                          <JFXSlider fx:id="sliderKernelYDL" blockIncrement="1.0" max="10.0" value="2.0" />
                                        </children>
                                     </VBox>
                                  </children>
                               </HBox>
-                              <Label text="Number of Epochs" textFill="WHITE">
+                              <HBox prefHeight="51.0" prefWidth="226.0" style="-fx-spacing: 8;">
+                                 <children>
+                                    <VBox prefHeight="51.0" prefWidth="120.0" style="-fx-spacing: 12;">
+                                       <children>
+                                          <Label text="Stride X" textFill="WHITE">
+                                             <font>
+                                                <Font name="Roboto Regular" size="15.0" />
+                                             </font>
+                                          </Label>
+                                          <JFXSlider fx:id="sliderStrideXDL" blockIncrement="1.0" max="10.0" value="2.0" />
+                                       </children>
+                                    </VBox>
+                                    <VBox prefHeight="69.0" prefWidth="112.0" style="-fx-spacing: 12;">
+                                       <children>
+                                          <Label text="Stride Y" textFill="WHITE">
+                                             <font>
+                                                <Font name="Roboto Regular" size="15.0" />
+                                             </font>
+                                          </Label>
+                                          <JFXSlider fx:id="sliderStrideYDL" blockIncrement="1.0" max="10.0" value="2.0" />
+                                       </children>
+                                    </VBox>
+                                 </children>
+                              </HBox>
+                              <Label text="Convolutional Layers" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />
                                  </font>
                               </Label>
-                              <JFXSlider fx:id="sliderNumberOfEpochsDL" value="10.0" />
-                              <HBox alignment="CENTER" style="-fx-spacing: 8;">
-                                 <children>
-                                    <Label fx:id="baseInfoClassesLabel11" alignment="BOTTOM_LEFT" prefHeight="21.0" prefWidth="127.0" text="Pooling Type" textFill="WHITE">
-                                       <font>
-                                          <Font name="Roboto Regular" size="15.0" />
-                                       </font>
-                                    </Label>
-                                    <JFXComboBox fx:id="poolingTypeComboBox" focusColor="#12ea4b" prefHeight="27.0" prefWidth="151.0" promptText="Pooling Type" style="-fx-text-fill: #FFF;" stylesheets="@styles.css" unFocusColor="WHITE" visibleRowCount="5" />
-                                 </children>
-                              </HBox>
+                              <JFXTextField fx:id="textFieldHiddenLayersDL" focusColor="#13f64f" promptText="Hidden layers weka style parameter" text="a" unFocusColor="WHITE" />
                            </children>
                         </VBox>
                      </children>
@@ -226,7 +235,7 @@
                                           <Font name="Roboto Regular" size="15.0" />
                                        </font>
                                     </Label>
-                                    <JFXComboBox fx:id="baseClassComboBox" disable="true" focusColor="#12ea4b" onAction="#handleClassComboBox" prefHeight="27.0" prefWidth="151.0" promptText="Choose base class" style="-fx-text-fill: #FFF;" styleClass="combo-box" stylesheets="@styles.css" unFocusColor="WHITE" visibleRowCount="0" />
+                                    <JFXComboBox fx:id="baseClassComboBox" disable="true" focusColor="#12ea4b" onAction="#handleClassComboBox" prefHeight="27.0" prefWidth="151.0" promptText="Choose base class" style="-fx-text-fill: #FFF;" styleClass="combo-box" stylesheets="@styles.css" unFocusColor="WHITE" visibleRowCount="7" />
                                  </children>
                               </HBox>
                            </children>
