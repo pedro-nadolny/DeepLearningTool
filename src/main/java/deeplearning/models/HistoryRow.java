@@ -6,6 +6,7 @@ import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.util.Callback;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 
@@ -19,14 +20,14 @@ public class HistoryRow {
     public BooleanProperty endedCC = new SimpleBooleanProperty(false);
     public BooleanProperty endedDL = new SimpleBooleanProperty(false);
 
-    public Evaluation evalDL;
+    public org.deeplearning4j.eval.Evaluation evalDL;
     public Evaluation evalCC;
 
     public boolean isRunningDL;
     public boolean isRunningCC;
 
     public Classifier classifierCC;
-    public Classifier classifierDL;
+    public MultiLayerNetwork classifierDL;
 
     public CCType classicalType;
 
@@ -69,23 +70,8 @@ public class HistoryRow {
     }
 
     public String getResultsTextDL() {
-        StringBuilder str = new StringBuilder(this.classifierDL.toString());
-
-        str.append("\n=== Classifier Statistics Summary ===\n" +evalDL.toSummaryString() + "\n");
-
-        try {
-            str.append(evalDL.toClassDetailsString());
-            str.append("\n");
-        } catch (Exception excp) {
-            excp.printStackTrace();
-        }
-
-        try {
-            str.append(evalDL.toMatrixString());
-        } catch (Exception excp) {
-            excp.printStackTrace();
-        }
-
+        StringBuilder str = new StringBuilder();
+        str.append("\n=== Classifier Statistics Summary ===\n" +evalDL.stats() + "\n" +classifierDL.summary());
         return str.toString();
     }
 

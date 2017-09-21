@@ -76,12 +76,6 @@
                                  </font>
                               </Label>
                               <JFXSlider fx:id="sliderLearningRateDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="30.0" />
-                              <Label text="Number of Iterations" textFill="WHITE">
-                                 <font>
-                                    <Font name="Roboto Regular" size="15.0" />
-                                 </font>
-                              </Label>
-                              <JFXSlider fx:id="sliderNumberOfIterationsDL" value="10.0" />
                               <HBox prefHeight="51.0" prefWidth="226.0" style="-fx-spacing: 8;">
                                  <children>
                                     <VBox prefHeight="51.0" prefWidth="120.0" style="-fx-spacing: 12;">
@@ -201,7 +195,7 @@
                   </VBox>
                   <VBox style="-fx-spacing: 10;">
                      <children>
-                        <VBox prefHeight="44.0" prefWidth="246.0" style="-fx-background-color: #2198F3; -fx-spacing: 10; -fx-padding: 10; -fx-background-radius: 4;">
+                        <VBox prefHeight="180.0" prefWidth="246.0" style="-fx-background-color: #2198F3; -fx-spacing: 10; -fx-padding: 10; -fx-background-radius: 4;">
                            <children>
                               <Label prefHeight="72.0" prefWidth="208.0" text="BASE" textFill="WHITE">
                                  <font>
