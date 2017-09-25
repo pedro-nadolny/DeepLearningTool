@@ -22,32 +22,40 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 
-import org.apache.commons.lang3.ClassPathUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.nn.api.NeuralNetwork;
+import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.io.ClassPathResource;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.rules.OneR;
 import weka.core.Attribute;
+import weka.core.DictionaryBuilder;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.CSVSaver;
 import weka.core.converters.ConverterUtils.DataSource;
@@ -58,11 +66,9 @@ import weka.filters.unsupervised.attribute.Reorder;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.lang.reflect.Array;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
 
 
 public class MainController extends VBox implements Initializable{
@@ -253,6 +259,56 @@ public class MainController extends VBox implements Initializable{
         }
     }
 
+    private Instances formatClass(Instances b) {
+        if(base.classAttribute().isNumeric()) {
+            return base;
+        }
+
+        Instances base = new Instances(b);
+
+        List<String> newClassValeus = new ArrayList<>();
+        for(int i = 0; i < base.classAttribute().numValues(); i++) {
+            newClassValeus.add(String.valueOf(i));
+        }
+
+        String[] oldValues = new String[base.numInstances()];
+
+        for(int i = 0; i < base.numInstances(); i++) {
+            oldValues[i] = String.valueOf((int)base.instance(i).value(base.numAttributes()-1));
+        }
+
+        Attribute newClass = new Attribute(base.classAttribute().name(), newClassValeus);
+
+        if(base.classIndex() != 0) {
+            base.setClassIndex(0);
+        } else {
+            base.setClassIndex(1);
+        }
+
+        base.deleteAttributeAt(base.numAttributes() - 1);
+        base.insertAttributeAt(newClass, base.numAttributes());
+        base.setClassIndex(base.numAttributes()-1);
+
+        HashMap map = new HashMap();
+        int v = 0;
+
+        for(int i = 0; i < base.numInstances(); i++) {
+            String classVal = oldValues[i];
+
+            if(!map.containsKey(classVal)) {
+                map.put(classVal, String.valueOf(v));
+                v++;
+            }
+
+            base.instance(i).setClassValue((String) map.get(classVal));
+        }
+
+        String className = base.classAttribute().name();
+        base.setClassIndex(base.numAttributes() - 1);
+
+        return base;
+    }
+
     private File loadArff() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open ARFF file");
@@ -349,6 +405,7 @@ public class MainController extends VBox implements Initializable{
                 }
 
                 baseInfoClassesLabel.setText(builder.toString());
+
                 return;
             }
         }
@@ -488,16 +545,9 @@ public class MainController extends VBox implements Initializable{
             c45.setConfidenceFactor(((float)sliderConfidenceFactorC45.getValue())/100);
             c45.setMinNumObj((int)sliderMinLeaftC45.getValue());
 
-            Instances auxBase = new Instances(base);
-            base.randomize(new Random(1));
-
-            Instances training = new Instances(base, 0, base.numInstances() * 70/100);
-            Instances testing = new Instances(base, training.numInstances(), base.numInstances()-training.numInstances());
-            base = auxBase;
-
-            c45.buildClassifier(training);
-            Evaluation e = new Evaluation(testing);
-            e.evaluateModel(c45, testing);
+            c45.buildClassifier(base);
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(c45, base, 10, new Random(1));
 
             Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, c45));
         } catch (Exception e) {
@@ -511,18 +561,10 @@ public class MainController extends VBox implements Initializable{
         try {
             NaiveBayes NB = new NaiveBayes();
 
-            Instances auxBase = new Instances(base);
-            base.randomize(new Random(1));
-
-            Instances training = new Instances(base, 0, base.numInstances() * 70/100);
-            Instances testing = new Instances(base, training.numInstances(), base.numInstances()-training.numInstances());
-            base = auxBase;
-
-            NB.buildClassifier(training);
-            Evaluation e = new Evaluation(testing);
-            e.evaluateModel(NB, testing);
-
+            NB.buildClassifier(base);
+            Evaluation e = new Evaluation(base);
             e.crossValidateModel(NB, base, 10, new Random(1));
+
             Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, NB));
         } catch (Exception e) {
             e.printStackTrace();
@@ -537,16 +579,10 @@ public class MainController extends VBox implements Initializable{
             OneR RB = new OneR();
             RB.setMinBucketSize((int)sliderMinBucketSizeRB.getValue());
 
-            Instances auxBase = new Instances(base);
-            base.randomize(new Random(1));
+            RB.buildClassifier(base);
 
-            Instances training = new Instances(base, 0, base.numInstances() * 70/100);
-            Instances testing = new Instances(base, training.numInstances(), base.numInstances()-training.numInstances());
-            base = auxBase;
-
-            RB.buildClassifier(training);
-            Evaluation e = new Evaluation(testing);
-            e.evaluateModel(RB, testing);
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(RB, base, 10, new Random(1));
 
             Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, RB));
         } catch (Exception e) {
@@ -564,16 +600,9 @@ public class MainController extends VBox implements Initializable{
             NN.setValidationSetSize((int)slideValidationSetSizeNN.getValue());
             NN.setHiddenLayers(textFieldHiddenLayersNN.getText());
 
-            Instances auxBase = new Instances(base);
-            base.randomize(new Random(1));
-
-            Instances training = new Instances(base, 0, base.numInstances() * 70/100);
-            Instances testing = new Instances(base, training.numInstances(), base.numInstances()-training.numInstances());
-            base = auxBase;
-
-            NN.buildClassifier(training);
-            Evaluation e = new Evaluation(testing);
-            e.evaluateModel(NN, testing);
+            NN.buildClassifier(base);
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(NN, base, 10, new Random(1));
 
             Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, NN));
         } catch (Exception e) {
@@ -584,6 +613,7 @@ public class MainController extends VBox implements Initializable{
 
     protected void runDeepLearning() throws Exception {
         int historyIndex = historyList.size() - 1;
+        int nAttr = base.numAttributes() - 1;
 
         try {
             NeuralNetConfiguration.ListBuilder DLBuilder = new NeuralNetConfiguration.Builder()
@@ -591,7 +621,7 @@ public class MainController extends VBox implements Initializable{
                 .iterations(1)
                 .seed(1)
                 .regularization(true)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .activation(new ActivationReLU())
                     .list()
                     .backprop(true)
@@ -602,9 +632,9 @@ public class MainController extends VBox implements Initializable{
 
             for(int i = 0; i < hiddenLayersParams.length; i++) {
                 if(hiddenLayersParams[i].equals("a")) {
-                    convLayersSize[i] = (base.numAttributes() + base.numClasses())/2;
+                    convLayersSize[i] = (nAttr + base.numClasses())/2;
                 } else if(hiddenLayersParams[i].equals("i")) {
-                    convLayersSize[i] = base.numAttributes();
+                    convLayersSize[i] = nAttr;
                 } else if(hiddenLayersParams[i].equals("o")) {
                     convLayersSize[i] = base.numClasses();
                 } else {
@@ -614,51 +644,40 @@ public class MainController extends VBox implements Initializable{
 
             List<Layer> layersList = new ArrayList<>();
 
-            ConvolutionLayer convolutionalLayer = new ConvolutionLayer();
-            convolutionalLayer.setLearningRate(sliderLearningRateDL.getValue()/100);
-            convolutionalLayer.setKernelSize(new int[]{(int)sliderKernelXDL.getValue() ,(int)sliderKernelYDL.getValue()});
-            convolutionalLayer.setStride(new int[]{(int)sliderStrideXDL.getValue() ,(int)sliderStrideYDL.getValue()});
-            convolutionalLayer.setLayerName("0 Conv Layer");
-            convolutionalLayer.setActivationFn(new ActivationReLU());
-            convolutionalLayer.setNIn(base.numAttributes() - 1);
-            convolutionalLayer.setNOut(convLayersSize[0]);
-
-            SubsamplingLayer poolingLayer = new SubsamplingLayer();
-            poolingLayer.setStride(new int[]{2, 2});
-            poolingLayer.setKernelSize(new int[]{2, 2});
-            poolingLayer.setLayerName("0 Pooling Layer");
-            poolingLayer.setPoolingType(PoolingType.MAX);
-
-            layersList.add(convolutionalLayer);
-            layersList.add(poolingLayer);
-
-            for(int i = 1; i < convLayersSize.length; i++) {
-                convolutionalLayer = new ConvolutionLayer();
+            for(int i = 0; i < convLayersSize.length; i++) {
+                Convolution1DLayer convolutionalLayer = new Convolution1DLayer();
                 convolutionalLayer.setLearningRate(sliderLearningRateDL.getValue()/100);
                 convolutionalLayer.setKernelSize(new int[]{(int)sliderKernelXDL.getValue() ,(int)sliderKernelYDL.getValue()});
                 convolutionalLayer.setStride(new int[]{(int)sliderStrideXDL.getValue() ,(int)sliderStrideYDL.getValue()});
-                convolutionalLayer.setLayerName(i + " Conv Layer");
+                convolutionalLayer.setLayerName("CL" + i);
                 convolutionalLayer.setActivationFn(new ActivationReLU());
                 convolutionalLayer.setNOut(convLayersSize[i]);
+                convolutionalLayer.setWeightInit(WeightInit.RELU);
+                convolutionalLayer.setConvolutionMode(ConvolutionMode.Truncate);
+                convolutionalLayer.setPadding(new int[]{(int)sliderKernelXDL.getValue() * 2, (int)sliderKernelYDL.getValue() * 2});
 
-                poolingLayer = new SubsamplingLayer();
-                poolingLayer.setStride(new int[]{2, 2});
-                poolingLayer.setKernelSize(new int[]{2, 2});
-                poolingLayer.setLayerName(i + "Pooling Layer");
-                poolingLayer.setPoolingType(PoolingType.MAX);
+                if(i == 0) {
+                    convolutionalLayer.setNIn(nAttr);
+                } else {
+                    convolutionalLayer.setNIn(convLayersSize[i - 1]);
+                }
+
+                Subsampling1DLayer poolingLayer = new Subsampling1DLayer.Builder()
+                        .name("PL" + 1)
+                        .kernelSize(2)
+                        .stride(2)
+                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .build();
 
                 layersList.add(convolutionalLayer);
                 layersList.add(poolingLayer);
             }
-
-            System.out.println("NUM: " + base.numClasses());
 
             OutputLayer outputLayer = new OutputLayer.Builder()
                     .name("Output Layer")
                     .activation(Activation.SOFTMAX)
                     .weightInit(WeightInit.XAVIER)
                     .nOut(base.numClasses())
-                    .nIn(base.numClasses())
                     .build();
 
             layersList.add(outputLayer);
@@ -667,40 +686,42 @@ public class MainController extends VBox implements Initializable{
                 DLBuilder = DLBuilder.layer(i, layersList.get(i));
             }
 
-            MultiLayerConfiguration.Builder builder = DLBuilder.setInputType(InputType.convolutionalFlat(base.numInstances()*7/10, base.numAttributes()-1, 1));
-
             CSVSaver csvSaver = new CSVSaver();
-
-            String fileName = "temp" + (int)(Math.random() * Integer.MAX_VALUE) + ".csv";
-            File f = new File(fileName);
-            f.createNewFile();
-
-            FileWriter writer = new FileWriter(f);
-
-            for(int i = 0; i < base.numInstances(); i++) {
-                writer.write(base.instance(i).toString() + "\n");
-            }
+            csvSaver.setInstances(this.formatClass(base));
+            csvSaver.setFile(new File("temp.csv"));
+            csvSaver.setNoHeaderRow(true);
+            csvSaver.writeBatch();
 
             RecordReader reader = new CSVRecordReader();
-            reader.initialize(new FileSplit(f));
+            reader.initialize(new FileSplit(new File("temp.csv")));
 
+            DataSetIterator iterator =  new RecordReaderDataSetIterator(reader, base.numInstances(), base.classIndex(), base.numClasses());
+            DataSet data = iterator.next();
 
-            DataSetIterator iter = new RecordReaderDataSetIterator(reader, base.numInstances(), base.classIndex(), base.numClasses());
-            DataSet data = iter.next();
-
-            f.delete();
             data.shuffle();
-
             SplitTestAndTrain split = data.splitTestAndTrain(0.7);
 
+            DataSet trainData = split.getTrain();
+            DataSet testData = split.getTrain();
 
+            DataNormalization normalization = new NormalizerStandardize();
+
+            normalization.fit(trainData);
+            normalization.transform(trainData);
+            normalization.transform(testData);
+
+            MultiLayerConfiguration.Builder builder = DLBuilder.setInputType(InputType.convolutionalFlat(trainData.numExamples(), nAttr, 1));
+            builder.pretrain(false);
+            builder.backprop(true);
+
+            System.out.println(base.numAttributes() * base.numInstances());
 
             MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
             model.init();
-            model.fit(split.getTrain());
+            model.fit(trainData);
 
             org.deeplearning4j.eval.Evaluation e = new org.deeplearning4j.eval.Evaluation(base.numClasses());
-            INDArray output = model.output(split.getTest().getFeatureMatrix());
+            INDArray output = model.output(testData.getFeatureMatrix());
             e.eval(split.getTest().getLabels(), output);
 
             Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, e, model));
@@ -709,7 +730,6 @@ public class MainController extends VBox implements Initializable{
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
         }
     }
-
 
     protected void finishDLTaskOfIndex(int index, org.deeplearning4j.eval.Evaluation eval, MultiLayerNetwork net) {
         historyList.get(index).endedDL.set(true);
