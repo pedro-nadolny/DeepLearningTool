@@ -32,6 +32,11 @@ public class HistoryRow {
     public CCType classicalType;
 
     public Date startTime;
+    public long elapsedTimeCC;
+    public long elapsedTimeDL;
+    public String baseInfoCC;
+    public String baseInfoDL;
+
 
     public HistoryRow(boolean isRunningDL, boolean isRunningCC) {
         this.isRunningDL = isRunningDL;
@@ -49,8 +54,9 @@ public class HistoryRow {
     }
 
     public String getResultsTextCC() {
-        StringBuilder str = new StringBuilder(this.classifierCC.toString());
+        StringBuilder str = new StringBuilder("=== Base Information ===\n\n" + baseInfoCC + "\n");
 
+        str.append(this.classifierCC.toString());
         str.append("\n=== Classifier Statistics Summary ===\n" +evalCC.toSummaryString() + "\n");
 
         try {
@@ -66,12 +72,15 @@ public class HistoryRow {
             excp.printStackTrace();
         }
 
+        str.append("\n\nModel build time: " + elapsedTimeCC+ " ms");
+
         return str.toString();
     }
 
     public String getResultsTextDL() {
-        StringBuilder str = new StringBuilder(this.classifierDL.toString());
+        StringBuilder str = new StringBuilder("=== Base Information ===\n\n" + baseInfoDL + "\n");
 
+        str.append("\n=== Network Information ===\n\n" + this.classifierDL.toString());
         str.append("\n=== Classifier Statistics Summary ===\n" + evalDL.toSummaryString() + "\n");
 
         try {
@@ -86,6 +95,8 @@ public class HistoryRow {
         } catch (Exception excp) {
             excp.printStackTrace();
         }
+
+        str.append("\n\nModel build time: " + elapsedTimeDL + " ms");
 
         return str.toString();
     }

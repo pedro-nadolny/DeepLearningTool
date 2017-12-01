@@ -4,6 +4,13 @@ import com.jfoenix.controls.*;
 
 import deeplearning.models.HistoryRow;
 
+import javafx.geometry.Pos;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.HBox;
+import org.apache.commons.io.FileUtils;
+import org.bytedeco.javacv.FrameFilter;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
@@ -13,7 +20,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -41,6 +47,7 @@ import weka.dl4j.iterators.instance.ConvolutionInstanceIterator;
 import weka.dl4j.layers.ConvolutionLayer;
 import weka.dl4j.layers.OutputLayer;
 import weka.dl4j.layers.SubsamplingLayer;
+import weka.dl4j.lossfunctions.LossMCXENT;
 import weka.dl4j.updater.Adam;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Reorder;
@@ -142,75 +149,113 @@ public class MainController extends VBox implements Initializable{
     }
 
     protected void historyViewPresentCCResults(HistoryRow row){
-
-
         JFXDialogLayout layout = new JFXDialogLayout();
+        JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
+
+        JFXButton closeButton = new JFXButton("Close".toUpperCase());
+        closeButton.setTextFill(Color.WHITE);
+        closeButton.setButtonType(JFXButton.ButtonType.RAISED);
+        closeButton.setText((row.isRunningDL? "Next" : "Close").toUpperCase());
+        closeButton.setStyle(
+                "-fx-background-color: #2198F3;\n" +
+                        "-fx-end-margin: 10px;\n" + "-fx-start-margin: 10px;\n" + "-fx-spacing: 10px"
+        );
+
+        closeButton.setOnAction(event ->  {
+            dialog.close();
+            if(row.isRunningDL) {
+                historyViewPresentDLResults(row);
+            }
+        });
+
+        JFXButton saveButton = new JFXButton("Save".toUpperCase());
+        saveButton.setTextFill(Color.WHITE);
+        saveButton.setButtonType(JFXButton.ButtonType.RAISED);
+        saveButton.setStyle(
+                "-fx-background-color: #2198F3;\n"
+        );
+
+        saveButton.setOnAction(event -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save CC Results");
+            FileChooser.ExtensionFilter txt = new FileChooser.ExtensionFilter("Text files (*.txt)",  "*.txt");
+            fileChooser.getExtensionFilters().addAll(txt);
+
+            File f = fileChooser.showSaveDialog(baseInfoClassesLabel.getScene().getWindow());
+
+            try {
+                FileUtils.writeStringToFile(f, row.getResultsTextCC());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
         ScrollPane scroll = new ScrollPane(new Text(row.getResultsTextCC()));
         scroll.setPadding(new Insets(8, 8,8,8));
         scroll.setFitToWidth(true);
 
-        layout.setBody(scroll);
+        VBox vbox = new VBox(10);
+        vbox.getChildren().add(scroll);
+
+        HBox buttonsHbox = new HBox(10);
+        buttonsHbox.setAlignment(Pos.BASELINE_RIGHT);
+        buttonsHbox.getChildren().add(saveButton);
+        buttonsHbox.getChildren().add(closeButton);
+        vbox.getChildren().add(buttonsHbox);
+
+        layout.setBody(vbox);
         layout.setMinWidth(665);
-
-        JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
-
-        String buttonTitle;
-        EventHandler<ActionEvent> buttonHandler;
-
-        if(row.isRunningDL) {
-            buttonTitle = "See Deep Learning Results";
-
-            buttonHandler = new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent event) {
-                    dialog.close();
-                    historyViewPresentDLResults(row);
-                }
-            };
-        } else {
-            buttonTitle = "Close";
-            buttonHandler = new EventHandler<ActionEvent>() {
-
-                @Override
-                public void handle(ActionEvent event) {
-                    dialog.close();
-                }
-            };
-        }
-
-        JFXButton closeButton = new JFXButton(buttonTitle.toUpperCase());
-        closeButton.setTextFill(Color.WHITE);
-        closeButton.setStyle("-fx-background-color: #2198F3");
-        closeButton.setOnAction(buttonHandler);
-        layout.setActions(closeButton);
 
         dialog.show();
     }
 
     protected void historyViewPresentDLResults(HistoryRow row){
         JFXDialogLayout layout = new JFXDialogLayout();
+        JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
+
+        JFXButton closeButton = new JFXButton("Close".toUpperCase());
+        closeButton.setTextFill(Color.WHITE);
+        closeButton.setStyle("-fx-background-color: #2198F3");
+        closeButton.setOnAction(e -> dialog.close());
+        closeButton.setButtonType(JFXButton.ButtonType.RAISED);
+
+        JFXButton saveButton = new JFXButton("Save".toUpperCase());
+        saveButton.setTextFill(Color.WHITE);
+        saveButton.setButtonType(JFXButton.ButtonType.RAISED);
+        saveButton.setStyle("-fx-background-color: #2198F3");
+
+        saveButton.setOnAction(event -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save DL Results");
+            FileChooser.ExtensionFilter txt = new FileChooser.ExtensionFilter("Text files (*.txt)",  "*.txt");
+            fileChooser.getExtensionFilters().addAll(txt);
+
+            File f = fileChooser.showSaveDialog(baseInfoClassesLabel.getScene().getWindow());
+
+            try {
+                FileUtils.writeStringToFile(f, row.getResultsTextDL());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
 
         ScrollPane scroll = new ScrollPane(new Text(row.getResultsTextDL()));
         scroll.setPadding(new Insets(8, 8,8,8));
         scroll.setFitToWidth(true);
 
-        layout.setBody(scroll);
+        VBox vbox = new VBox(10);
+        vbox.getChildren().add(scroll);
+
+        HBox buttonsHbox = new HBox(10);
+        buttonsHbox.setAlignment(Pos.BASELINE_RIGHT);
+        buttonsHbox.getChildren().add(saveButton);
+        buttonsHbox.getChildren().add(closeButton);
+        vbox.getChildren().add(buttonsHbox);
+
+        layout.setBody(vbox);
         layout.setMinWidth(665);
 
-        JFXDialog dialogDL = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
-
-        JFXButton closeButton = new JFXButton("Close".toUpperCase());
-        closeButton.setTextFill(Color.WHITE);
-        closeButton.setStyle("-fx-background-color: #2198F3");
-        closeButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                dialogDL.close();
-            }
-        });
-
-        layout.setActions(closeButton);
-        dialogDL.show();
+        dialog.show();
     }
 
     @FXML protected void handleLoadBase(ActionEvent event) throws Exception {
@@ -227,12 +272,15 @@ public class MainController extends VBox implements Initializable{
                 baseIndexesOrder[i] = i;
             }
 
+            String baseName = base.relationName();
+
             attOrderFilter.setAttributeIndicesArray(baseIndexesOrder);
             attOrderFilter.setInputFormat(base);
 
             base.setClass(base.attribute(base.numAttributes() - 1));
 
             updateBaseInfoSection();
+            base.setRelationName(baseName);
         }
     }
 
@@ -407,12 +455,8 @@ public class MainController extends VBox implements Initializable{
             JFXDialog dialog = new JFXDialog(root, layout, JFXDialog.DialogTransition.CENTER);
 
             JFXButton closeButton = new JFXButton("Close");
-            closeButton.setOnAction(new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent event) {
-                    dialog.close();
-                }
-            });
+            closeButton.setOnAction(e -> dialog.close());
+            closeButton.setButtonType(JFXButton.ButtonType.RAISED);
 
             layout.setActions(closeButton);
             dialog.show();
@@ -516,17 +560,21 @@ public class MainController extends VBox implements Initializable{
 
     protected void runC45() throws Exception{
         int historyIndex = historyList.size() - 1;
+        Instances b = new Instances(base);
 
         try {
             J48 c45 = new J48();
             c45.setConfidenceFactor(((float)sliderConfidenceFactorC45.getValue())/100);
             c45.setMinNumObj((int)sliderMinLeaftC45.getValue());
 
-            c45.buildClassifier(base);
-            Evaluation e = new Evaluation(base);
+            long t = System.currentTimeMillis();
+            c45.buildClassifier(b);
+            final long time = System.currentTimeMillis() - t;
+
+            Evaluation e = new Evaluation(b);
             e.crossValidateModel(c45, base, 10, new Random(1));
 
-            Platform.runLater(() -> finishTaskCC(historyIndex, e, c45));
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, c45, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -535,14 +583,19 @@ public class MainController extends VBox implements Initializable{
 
     protected void runNaiveBayes() throws Exception {
         int historyIndex = historyList.size() - 1;
+        Instances b = new Instances(base);
+
         try {
             NaiveBayes NB = new NaiveBayes();
 
-            NB.buildClassifier(base);
-            Evaluation e = new Evaluation(base);
-            e.crossValidateModel(NB, base, 10, new Random(1));
+            long t = System.currentTimeMillis();
+            NB.buildClassifier(b);
+            final long time = System.currentTimeMillis() - t;
 
-            Platform.runLater(() -> finishTaskCC(historyIndex, e, NB));
+            Evaluation e = new Evaluation(b);
+            e.crossValidateModel(NB, b, 10, new Random(1));
+
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, NB, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -551,17 +604,20 @@ public class MainController extends VBox implements Initializable{
 
     protected void runRuleBased() throws Exception {
         int historyIndex = historyList.size() - 1;
+        Instances b = new Instances(base);
 
         try {
             OneR RB = new OneR();
             RB.setMinBucketSize((int)sliderMinBucketSizeRB.getValue());
 
-            RB.buildClassifier(base);
+            long t = System.currentTimeMillis();
+            RB.buildClassifier(b);
+            final long time = System.currentTimeMillis() - t;
 
             Evaluation e = new Evaluation(base);
-            e.crossValidateModel(RB, base, 10, new Random(1));
+            e.crossValidateModel(RB, b, 10, new Random(1));
 
-            Platform.runLater(() -> finishTaskCC(historyIndex, e, RB));
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, RB, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -570,6 +626,7 @@ public class MainController extends VBox implements Initializable{
 
     protected void runNeuralNetwork() throws Exception {
         int historyIndex = historyList.size() - 1;
+        Instances b = new Instances(base);
         try {
             MultilayerPerceptron NN = new MultilayerPerceptron();
             NN.setLearningRate(sliderLearningRateNN.getValue()/100);
@@ -577,11 +634,14 @@ public class MainController extends VBox implements Initializable{
             NN.setValidationSetSize((int)slideValidationSetSizeNN.getValue());
             NN.setHiddenLayers(textFieldHiddenLayersNN.getText());
 
-            NN.buildClassifier(base);
-            Evaluation e = new Evaluation(base);
-            e.crossValidateModel(NN, base, 10, new Random(1));
+            long t = System.currentTimeMillis();
+            NN.buildClassifier(b);
+            final long time = System.currentTimeMillis() - t;
 
-            Platform.runLater(() -> finishTaskCC(historyIndex, e, NN));
+            Evaluation e = new Evaluation(b);
+            e.crossValidateModel(NN, b, 10, new Random(1));
+
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, NN, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -590,41 +650,43 @@ public class MainController extends VBox implements Initializable{
 
     protected void runDeepLearning() throws Exception {
         int historyIndex = historyList.size() - 1;
-        int nAttr = base.numAttributes() - 1;
+        Instances b = new Instances(base);
+        int nAttr = b.numAttributes() - 1;
 
         try {
-
             Dl4jMlpClassifier DL = new Dl4jMlpClassifier();
             DL.setSeed(1);
-            DL.setNumEpochs(10);
+            DL.setNumEpochs(1);
 
             ConvolutionInstanceIterator iterator = new ConvolutionInstanceIterator();
             iterator.setHeight(1);
             iterator.setNumChannels(1);
-            iterator.setWidth(base.numAttributes()-1);
+            iterator.setWidth(nAttr);
 
             String[] hiddenLayersParams = textFieldHiddenLayersDL.getText().replaceAll(" ", "").split(",");
             List<Layer> layers = new ArrayList<>();
 
             for(int i = 0; i < hiddenLayersParams.length; i++) {
-                int convLayerSize = 0;
+                int convLayerSize;
 
                 if(hiddenLayersParams[i].equals("a")) {
-                    convLayerSize = (nAttr + base.numClasses())/2;
+                    convLayerSize = (nAttr + b.numClasses())/2;
                 } else if(hiddenLayersParams[i].equals("i")) {
                     convLayerSize = nAttr;
                 } else if(hiddenLayersParams[i].equals("o")) {
-                    convLayerSize = base.numClasses();
+                    convLayerSize = b.numClasses();
                 } else {
                     convLayerSize = Integer.parseInt(hiddenLayersParams[i]);
                 }
 
                 ConvolutionLayer convLayer = new ConvolutionLayer();
                 convLayer.setNOut(convLayerSize);
+                convLayer.setConvolutionMode(ConvolutionMode.Same);
                 convLayer.setActivationFn(new ActivationReLU());
                 convLayer.setKernelSize(new int[]{1, (int) sliderKernelDL.getValue()});
                 convLayer.setStride(new int[]{(int) sliderStrideDL.getValue(), 1});
                 convLayer.setLayerName("CONV " + i);
+
 
                 SubsamplingLayer subSamplignLayer = new SubsamplingLayer();
                 subSamplignLayer.setPoolingType(PoolingType.MAX);
@@ -638,12 +700,16 @@ public class MainController extends VBox implements Initializable{
 
             OutputLayer outputLayer = new OutputLayer();
             outputLayer.setActivationFn(new ActivationSoftmax());
+            outputLayer.setLossFn(new LossMCXENT());
+            outputLayer.setNOut(b.numClasses());
             outputLayer.setLayerName("OUTPUT");
             layers.add(outputLayer);
 
             NeuralNetConfiguration nnc = new NeuralNetConfiguration();
             nnc.setUpdater(new Adam());
+            nnc.setOptimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT);
             nnc.setLearningRate(sliderLearningRateDL.getValue()/100);
+
             DL.setNeuralNetConfiguration(nnc);
 
             DL.setInstanceIterator(iterator);
@@ -651,27 +717,34 @@ public class MainController extends VBox implements Initializable{
             Layer[] convNeuralLayers = new Layer[hiddenLayersParams.length * 2 + 1];
             layers.toArray(convNeuralLayers);
             DL.setLayers(convNeuralLayers);
-            DL.buildClassifier(base);
 
-            Evaluation e = new Evaluation(base);
-            e.crossValidateModel(DL, base, 10, new Random(1));
+            long t = System.currentTimeMillis();
+            DL.buildClassifier(b);
+            final long time = System.currentTimeMillis() - t;
 
-            Platform.runLater(() -> finishTaskDL(historyIndex, e, DL));
+            Evaluation e = new Evaluation(b);
+            e.crossValidateModel(DL, b, 10, new Random(1));
+
+            Platform.runLater(() -> finishTaskDL(historyIndex, e, DL, time, b.toSummaryString()));
         } catch(Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
         }
     }
 
-    protected void finishTaskCC(int index, Evaluation e, Classifier c) {
+    protected void finishTaskCC(int index, Evaluation e, Classifier c, long t, String baseInfo) {
         historyList.get(index).classifierCC = c;
         historyList.get(index).evalCC = e;
+        historyList.get(index).elapsedTimeCC = t;
+        historyList.get(index).baseInfoCC = baseInfo;
         historyList.get(index).endedCC.set(true);
     }
 
-    protected void finishTaskDL(int index, Evaluation e, Classifier c) {
+    protected void finishTaskDL(int index, Evaluation e, Classifier c, long t, String baseInfo) {
         historyList.get(index).classifierDL = c;
         historyList.get(index).evalDL = e;
+        historyList.get(index).elapsedTimeDL = t;
+        historyList.get(index).baseInfoDL = baseInfo;
         historyList.get(index).endedDL.set(true);
     }
 
