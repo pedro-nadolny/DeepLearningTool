@@ -20,14 +20,14 @@ public class HistoryRow {
     public BooleanProperty endedCC = new SimpleBooleanProperty(false);
     public BooleanProperty endedDL = new SimpleBooleanProperty(false);
 
-    public org.deeplearning4j.eval.Evaluation evalDL;
+    public Evaluation evalDL;
     public Evaluation evalCC;
 
     public boolean isRunningDL;
     public boolean isRunningCC;
 
     public Classifier classifierCC;
-    public MultiLayerNetwork classifierDL;
+    public Classifier classifierDL;
 
     public CCType classicalType;
 
@@ -70,10 +70,26 @@ public class HistoryRow {
     }
 
     public String getResultsTextDL() {
-        StringBuilder str = new StringBuilder();
-        str.append("\n=== Classifier Statistics Summary ===\n" +evalDL.stats() + "\n" +classifierDL.summary());
+        StringBuilder str = new StringBuilder(this.classifierDL.toString());
+
+        str.append("\n=== Classifier Statistics Summary ===\n" + evalDL.toSummaryString() + "\n");
+
+        try {
+            str.append(evalDL.toClassDetailsString());
+            str.append("\n");
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
+        try {
+            str.append(evalDL.toMatrixString());
+        } catch (Exception excp) {
+            excp.printStackTrace();
+        }
+
         return str.toString();
     }
+
 
     public enum CCType {
         C45(0), NN(1), RB(2), NB(3);

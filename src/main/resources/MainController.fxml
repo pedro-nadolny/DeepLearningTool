@@ -76,54 +76,18 @@
                                  </font>
                               </Label>
                               <JFXSlider fx:id="sliderLearningRateDL" blendMode="SRC_ATOP" blockIncrement="1.0" majorTickUnit="0.01" minorTickCount="1" nodeOrientation="LEFT_TO_RIGHT" stylesheets="@styles.css" value="30.0" />
-                              <HBox prefHeight="51.0" prefWidth="226.0" style="-fx-spacing: 8;">
-                                 <children>
-                                    <VBox prefHeight="51.0" prefWidth="120.0" style="-fx-spacing: 12;">
-                                       <children>
-                                          <Label text="Kernel X" textFill="WHITE">
-                                             <font>
-                                                <Font name="Roboto Regular" size="15.0" />
-                                             </font>
-                                          </Label>
-                                          <JFXSlider fx:id="sliderKernelXDL" blockIncrement="1.0" max="10.0" value="2.0" />
-                                       </children>
-                                    </VBox>
-                                    <VBox prefHeight="69.0" prefWidth="112.0" style="-fx-spacing: 12;">
-                                       <children>
-                                          <Label text="Kernel Y" textFill="WHITE">
-                                             <font>
-                                                <Font name="Roboto Regular" size="15.0" />
-                                             </font>
-                                          </Label>
-                                          <JFXSlider fx:id="sliderKernelYDL" blockIncrement="1.0" max="10.0" value="2.0" />
-                                       </children>
-                                    </VBox>
-                                 </children>
-                              </HBox>
-                              <HBox prefHeight="51.0" prefWidth="226.0" style="-fx-spacing: 8;">
-                                 <children>
-                                    <VBox prefHeight="51.0" prefWidth="120.0" style="-fx-spacing: 12;">
-                                       <children>
-                                          <Label text="Stride X" textFill="WHITE">
-                                             <font>
-                                                <Font name="Roboto Regular" size="15.0" />
-                                             </font>
-                                          </Label>
-                                          <JFXSlider fx:id="sliderStrideXDL" blockIncrement="1.0" max="10.0" value="2.0" />
-                                       </children>
-                                    </VBox>
-                                    <VBox prefHeight="69.0" prefWidth="112.0" style="-fx-spacing: 12;">
-                                       <children>
-                                          <Label text="Stride Y" textFill="WHITE">
-                                             <font>
-                                                <Font name="Roboto Regular" size="15.0" />
-                                             </font>
-                                          </Label>
-                                          <JFXSlider fx:id="sliderStrideYDL" blockIncrement="1.0" max="10.0" value="2.0" />
-                                       </children>
-                                    </VBox>
-                                 </children>
-                              </HBox>
+                              <Label text="Kernel" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXSlider fx:id="sliderKernelDL" blockIncrement="1.0" max="5.0" value="2.0" />
+                              <Label text="Stride" textFill="WHITE">
+                                 <font>
+                                    <Font name="Roboto Regular" size="15.0" />
+                                 </font>
+                              </Label>
+                              <JFXSlider fx:id="sliderStrideDL" blockIncrement="1.0" max="5.0" value="2.0" />
                               <Label text="Convolutional Layers" textFill="WHITE">
                                  <font>
                                     <Font name="Roboto Regular" size="15.0" />

@@ -4,6 +4,11 @@ import com.jfoenix.controls.*;
 
 import deeplearning.models.HistoryRow;
 
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -21,52 +26,26 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
-
-import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
-import org.datavec.api.split.FileSplit;
-import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationReLU;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.MultiDataSet;
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.DataSetUtil;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
-import org.nd4j.linalg.io.ClassPathResource;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.NaiveBayes;
-import weka.classifiers.rules.OneR;
-import weka.core.Attribute;
-import weka.core.DictionaryBuilder;
-import weka.core.Instance;
-import weka.core.Instances;
-import weka.core.converters.CSVSaver;
-import weka.core.converters.ConverterUtils.DataSource;
+import weka.classifiers.functions.Dl4jMlpClassifier;
 import weka.classifiers.functions.MultilayerPerceptron;
+import weka.classifiers.rules.OneR;
 import weka.classifiers.trees.J48;
+import weka.core.Attribute;
+import weka.core.Instances;
+import weka.core.converters.ConverterUtils;
+import weka.dl4j.NeuralNetConfiguration;
+import weka.dl4j.iterators.instance.ConvolutionInstanceIterator;
+import weka.dl4j.layers.ConvolutionLayer;
+import weka.dl4j.layers.OutputLayer;
+import weka.dl4j.layers.SubsamplingLayer;
+import weka.dl4j.updater.Adam;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Reorder;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.lang.reflect.Array;
 import java.net.URL;
 import java.util.*;
 
@@ -97,13 +76,11 @@ public class MainController extends VBox implements Initializable{
     @FXML private JFXSlider sliderMinLeaftC45;
 
     @FXML private JFXSlider sliderLearningRateDL;
-    @FXML private JFXSlider sliderKernelXDL;
-    @FXML private JFXSlider sliderKernelYDL;
-    @FXML private JFXSlider sliderStrideXDL;
-    @FXML private JFXSlider sliderStrideYDL;
+    @FXML private JFXSlider sliderKernelDL;
+    @FXML private JFXSlider sliderStrideDL;
     @FXML private JFXTextField textFieldHiddenLayersDL;
 
-    private JFXSlider sliderLearningrRateNN;
+    private JFXSlider sliderLearningRateNN;
     private JFXSlider sliderMomentumNN;
     private JFXSlider slideValidationSetSizeNN;
     private JFXTextField textFieldHiddenLayersNN;
@@ -117,8 +94,8 @@ public class MainController extends VBox implements Initializable{
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        sliderLearningrRateNN = new JFXSlider();
-        sliderLearningrRateNN.setValue(30);
+        sliderLearningRateNN = new JFXSlider();
+        sliderLearningRateNN.setValue(30);
 
         sliderMomentumNN = new JFXSlider();
         sliderMomentumNN.setValue(20);
@@ -241,7 +218,7 @@ public class MainController extends VBox implements Initializable{
 
         if (f != null && f.getName().endsWith(".arff")) {
 
-            DataSource source = new DataSource(f.getAbsolutePath());
+            ConverterUtils.DataSource source = new ConverterUtils.DataSource(f.getAbsolutePath());
             base = new Instances(source.getDataSet());
 
             int[] baseIndexesOrder = new int[base.numAttributes()];
@@ -518,7 +495,7 @@ public class MainController extends VBox implements Initializable{
         } else if(radioButtonNaiveBayes.isSelected()) {
             addOption("No Parameters", null);
         } else if(radioButtonNeuralNetwork.isSelected()) {
-            addOption("Learning Rate", sliderLearningrRateNN);
+            addOption("Learning Rate", sliderLearningRateNN);
             addOption("Momentum", sliderMomentumNN);
             addOption("Validation Set Size", slideValidationSetSizeNN);
             addOption("Hidden Layers", textFieldHiddenLayersNN);
@@ -549,7 +526,7 @@ public class MainController extends VBox implements Initializable{
             Evaluation e = new Evaluation(base);
             e.crossValidateModel(c45, base, 10, new Random(1));
 
-            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, c45));
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, c45));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -565,7 +542,7 @@ public class MainController extends VBox implements Initializable{
             Evaluation e = new Evaluation(base);
             e.crossValidateModel(NB, base, 10, new Random(1));
 
-            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, NB));
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, NB));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -584,7 +561,7 @@ public class MainController extends VBox implements Initializable{
             Evaluation e = new Evaluation(base);
             e.crossValidateModel(RB, base, 10, new Random(1));
 
-            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, RB));
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, RB));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -595,7 +572,7 @@ public class MainController extends VBox implements Initializable{
         int historyIndex = historyList.size() - 1;
         try {
             MultilayerPerceptron NN = new MultilayerPerceptron();
-            NN.setLearningRate(sliderLearningrRateNN.getValue()/100);
+            NN.setLearningRate(sliderLearningRateNN.getValue()/100);
             NN.setMomentum(sliderMomentumNN.getValue()/100);
             NN.setValidationSetSize((int)slideValidationSetSizeNN.getValue());
             NN.setHiddenLayers(textFieldHiddenLayersNN.getText());
@@ -604,7 +581,7 @@ public class MainController extends VBox implements Initializable{
             Evaluation e = new Evaluation(base);
             e.crossValidateModel(NN, base, 10, new Random(1));
 
-            Platform.runLater(() -> finishCCTaskOfIndex(historyIndex, e, NN));
+            Platform.runLater(() -> finishTaskCC(historyIndex, e, NN));
         } catch (Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
@@ -616,131 +593,86 @@ public class MainController extends VBox implements Initializable{
         int nAttr = base.numAttributes() - 1;
 
         try {
-            NeuralNetConfiguration.ListBuilder DLBuilder = new NeuralNetConfiguration.Builder()
-                .learningRate(sliderLearningRateDL.getValue()/100)
-                .iterations(1)
-                .seed(1)
-                .regularization(true)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .activation(new ActivationReLU())
-                    .list()
-                    .backprop(true)
-                    .pretrain(false);
 
-            String[] hiddenLayersParams = textFieldHiddenLayersDL.getText().split(" ");
-            int[] convLayersSize = new int[hiddenLayersParams.length];
+            Dl4jMlpClassifier DL = new Dl4jMlpClassifier();
+            DL.setSeed(1);
+            DL.setNumEpochs(10);
+
+            ConvolutionInstanceIterator iterator = new ConvolutionInstanceIterator();
+            iterator.setHeight(1);
+            iterator.setNumChannels(1);
+            iterator.setWidth(base.numAttributes()-1);
+
+            String[] hiddenLayersParams = textFieldHiddenLayersDL.getText().replaceAll(" ", "").split(",");
+            List<Layer> layers = new ArrayList<>();
 
             for(int i = 0; i < hiddenLayersParams.length; i++) {
+                int convLayerSize = 0;
+
                 if(hiddenLayersParams[i].equals("a")) {
-                    convLayersSize[i] = (nAttr + base.numClasses())/2;
+                    convLayerSize = (nAttr + base.numClasses())/2;
                 } else if(hiddenLayersParams[i].equals("i")) {
-                    convLayersSize[i] = nAttr;
+                    convLayerSize = nAttr;
                 } else if(hiddenLayersParams[i].equals("o")) {
-                    convLayersSize[i] = base.numClasses();
+                    convLayerSize = base.numClasses();
                 } else {
-                    convLayersSize[i] = Integer.parseInt(hiddenLayersParams[i]);
-                }
-            }
-
-            List<Layer> layersList = new ArrayList<>();
-
-            for(int i = 0; i < convLayersSize.length; i++) {
-                Convolution1DLayer convolutionalLayer = new Convolution1DLayer();
-                convolutionalLayer.setLearningRate(sliderLearningRateDL.getValue()/100);
-                convolutionalLayer.setKernelSize(new int[]{(int)sliderKernelXDL.getValue() ,(int)sliderKernelYDL.getValue()});
-                convolutionalLayer.setStride(new int[]{(int)sliderStrideXDL.getValue() ,(int)sliderStrideYDL.getValue()});
-                convolutionalLayer.setLayerName("CL" + i);
-                convolutionalLayer.setActivationFn(new ActivationReLU());
-                convolutionalLayer.setNOut(convLayersSize[i]);
-                convolutionalLayer.setWeightInit(WeightInit.RELU);
-                convolutionalLayer.setConvolutionMode(ConvolutionMode.Truncate);
-                convolutionalLayer.setPadding(new int[]{(int)sliderKernelXDL.getValue() * 2, (int)sliderKernelYDL.getValue() * 2});
-
-                if(i == 0) {
-                    convolutionalLayer.setNIn(nAttr);
-                } else {
-                    convolutionalLayer.setNIn(convLayersSize[i - 1]);
+                    convLayerSize = Integer.parseInt(hiddenLayersParams[i]);
                 }
 
-                Subsampling1DLayer poolingLayer = new Subsampling1DLayer.Builder()
-                        .name("PL" + 1)
-                        .kernelSize(2)
-                        .stride(2)
-                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                        .build();
+                ConvolutionLayer convLayer = new ConvolutionLayer();
+                convLayer.setNOut(convLayerSize);
+                convLayer.setActivationFn(new ActivationReLU());
+                convLayer.setKernelSize(new int[]{1, (int) sliderKernelDL.getValue()});
+                convLayer.setStride(new int[]{(int) sliderStrideDL.getValue(), 1});
+                convLayer.setLayerName("CONV " + i);
 
-                layersList.add(convolutionalLayer);
-                layersList.add(poolingLayer);
+                SubsamplingLayer subSamplignLayer = new SubsamplingLayer();
+                subSamplignLayer.setPoolingType(PoolingType.MAX);
+                subSamplignLayer.setKernelSize(new int[]{1, 2});
+                subSamplignLayer.setStride(new int[]{2, 1});
+                subSamplignLayer.setLayerName("POOLING " + i);
+
+                layers.add(convLayer);
+                layers.add(subSamplignLayer);
             }
 
-            OutputLayer outputLayer = new OutputLayer.Builder()
-                    .name("Output Layer")
-                    .activation(Activation.SOFTMAX)
-                    .weightInit(WeightInit.XAVIER)
-                    .nOut(base.numClasses())
-                    .build();
+            OutputLayer outputLayer = new OutputLayer();
+            outputLayer.setActivationFn(new ActivationSoftmax());
+            outputLayer.setLayerName("OUTPUT");
+            layers.add(outputLayer);
 
-            layersList.add(outputLayer);
+            NeuralNetConfiguration nnc = new NeuralNetConfiguration();
+            nnc.setUpdater(new Adam());
+            nnc.setLearningRate(sliderLearningRateDL.getValue()/100);
+            DL.setNeuralNetConfiguration(nnc);
 
-            for(int i = 0; i < layersList.size(); i++) {
-                DLBuilder = DLBuilder.layer(i, layersList.get(i));
-            }
+            DL.setInstanceIterator(iterator);
 
-            CSVSaver csvSaver = new CSVSaver();
-            csvSaver.setInstances(this.formatClass(base));
-            csvSaver.setFile(new File("temp.csv"));
-            csvSaver.setNoHeaderRow(true);
-            csvSaver.writeBatch();
+            Layer[] convNeuralLayers = new Layer[hiddenLayersParams.length * 2 + 1];
+            layers.toArray(convNeuralLayers);
+            DL.setLayers(convNeuralLayers);
+            DL.buildClassifier(base);
 
-            RecordReader reader = new CSVRecordReader();
-            reader.initialize(new FileSplit(new File("temp.csv")));
+            Evaluation e = new Evaluation(base);
+            e.crossValidateModel(DL, base, 10, new Random(1));
 
-            DataSetIterator iterator =  new RecordReaderDataSetIterator(reader, base.numInstances(), base.classIndex(), base.numClasses());
-            DataSet data = iterator.next();
-
-            data.shuffle();
-            SplitTestAndTrain split = data.splitTestAndTrain(0.7);
-
-            DataSet trainData = split.getTrain();
-            DataSet testData = split.getTrain();
-
-            DataNormalization normalization = new NormalizerStandardize();
-
-            normalization.fit(trainData);
-            normalization.transform(trainData);
-            normalization.transform(testData);
-
-            MultiLayerConfiguration.Builder builder = DLBuilder.setInputType(InputType.convolutionalFlat(trainData.numExamples(), nAttr, 1));
-            builder.pretrain(false);
-            builder.backprop(true);
-
-            System.out.println(base.numAttributes() * base.numInstances());
-
-            MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
-            model.init();
-            model.fit(trainData);
-
-            org.deeplearning4j.eval.Evaluation e = new org.deeplearning4j.eval.Evaluation(base.numClasses());
-            INDArray output = model.output(testData.getFeatureMatrix());
-            e.eval(split.getTest().getLabels(), output);
-
-            Platform.runLater(() -> finishDLTaskOfIndex(historyIndex, e, model));
+            Platform.runLater(() -> finishTaskDL(historyIndex, e, DL));
         } catch(Exception e) {
             e.printStackTrace();
             Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
         }
     }
 
-    protected void finishDLTaskOfIndex(int index, org.deeplearning4j.eval.Evaluation eval, MultiLayerNetwork net) {
-        historyList.get(index).endedDL.set(true);
-        historyList.get(index).evalDL = eval;
-        historyList.get(index).classifierDL = net;
+    protected void finishTaskCC(int index, Evaluation e, Classifier c) {
+        historyList.get(index).classifierCC = c;
+        historyList.get(index).evalCC = e;
+        historyList.get(index).endedCC.set(true);
     }
 
-    protected void finishCCTaskOfIndex(int index, Evaluation eval, Classifier c) {
-        historyList.get(index).endedCC.set(true);
-        historyList.get(index).evalCC = eval;
-        historyList.get(index).classifierCC = c;
+    protected void finishTaskDL(int index, Evaluation e, Classifier c) {
+        historyList.get(index).classifierDL = c;
+        historyList.get(index).evalDL = e;
+        historyList.get(index).endedDL.set(true);
     }
 
     protected void finishTaskOfIndexWithError(int index) {
