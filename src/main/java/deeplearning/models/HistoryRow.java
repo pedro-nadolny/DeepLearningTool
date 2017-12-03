@@ -1,30 +1,29 @@
 package deeplearning.models;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.*;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.util.Callback;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Date;
 
 /**
  * Created by Pedro on 6/28/17.
  */
 public class HistoryRow {
-    public BooleanProperty fail = new SimpleBooleanProperty(false);
+    public BooleanProperty failCC = new SimpleBooleanProperty(false);
+    public BooleanProperty failDL = new SimpleBooleanProperty(false);
     public BooleanProperty endedCC = new SimpleBooleanProperty(false);
     public BooleanProperty endedDL = new SimpleBooleanProperty(false);
 
     public Evaluation evalDL;
     public Evaluation evalCC;
 
-    public boolean isRunningDL;
-    public boolean isRunningCC;
+    public boolean enabledDL;
+    public boolean enabledCC;
 
     public Classifier classifierCC;
     public Classifier classifierDL;
@@ -37,10 +36,12 @@ public class HistoryRow {
     public String baseInfoCC;
     public String baseInfoDL;
 
+    public Exception exceptionCC;
+    public Exception exceptionDL;
 
-    public HistoryRow(boolean isRunningDL, boolean isRunningCC) {
-        this.isRunningDL = isRunningDL;
-        this.isRunningCC = isRunningCC;
+    public HistoryRow(boolean enabledDL, boolean enabledCC) {
+        this.enabledDL = enabledDL;
+        this.enabledCC = enabledCC;
         this.startTime = new Date();
     }
 
@@ -48,12 +49,19 @@ public class HistoryRow {
         return new Callback<HistoryRow, Observable[]>()  {
             @Override
             public Observable[] call(HistoryRow param) {
-                return new Observable[]{param.endedCC, param.endedDL, param.fail};
+                return new Observable[]{param.endedCC, param.endedDL, param.failCC, param.failDL};
             }
         };
     }
 
     public String getResultsTextCC() {
+        if(failCC.getValue()) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            exceptionCC.printStackTrace(pw);
+            return sw.toString();
+        }
+
         StringBuilder str = new StringBuilder("=== Base Information ===\n\n" + baseInfoCC + "\n");
 
         str.append(this.classifierCC.toString());
@@ -78,6 +86,13 @@ public class HistoryRow {
     }
 
     public String getResultsTextDL() {
+        if(failDL.getValue()) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            exceptionDL.printStackTrace(pw);
+            return sw.toString();
+        }
+
         StringBuilder str = new StringBuilder("=== Base Information ===\n\n" + baseInfoDL + "\n");
 
         str.append("\n=== Network Information ===\n\n" + this.classifierDL.toString());

@@ -50,15 +50,15 @@ public class HistoryListViewCell extends ListCell<HistoryRow> {
 
         StringBuilder titleStr = new StringBuilder();
 
-        if(item.isRunningDL) {
+        if(item.enabledDL) {
             titleStr.append("DL ");
 
-            if(item.isRunningCC) {
+            if(item.enabledCC) {
                 titleStr.append("+ ");
             }
         }
 
-        if(item.isRunningCC) {
+        if(item.enabledCC) {
             switch (item.classicalType) {
                 case NB: titleStr.append("NB ");
                     break;
@@ -78,13 +78,16 @@ public class HistoryListViewCell extends ListCell<HistoryRow> {
         titleStr.append(dateFormat.format(item.startTime));
         title.setText(titleStr.toString());
 
-        boolean ended = item.endedCC.get() && !item.isRunningDL;
-        ended = ended || (item.endedDL.get() && !item.isRunningCC);
+        boolean ended = item.endedCC.get() && !item.enabledDL;
+        ended = ended || (item.endedDL.get() && !item.enabledCC);
         ended = ended || (item.endedDL.get() && item.endedCC.get());
+
+        boolean fail = item.failDL.get() && (item.endedCC.get() || item.failCC.get() || !item.enabledCC) ||
+                       item.failCC.get() && (item.endedDL.get() || item.failDL.get() || !item.enabledDL);
 
         if (ended) {
             box.getChildren().add(0, iconDone);
-        } else if(item.fail.get()){
+        } else if(fail) {
             box.getChildren().add(0, iconFail);
         } else {
             box.getChildren().add(0, spinner);

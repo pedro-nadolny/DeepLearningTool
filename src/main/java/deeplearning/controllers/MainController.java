@@ -5,10 +5,8 @@ import com.jfoenix.controls.*;
 import deeplearning.models.HistoryRow;
 
 import javafx.geometry.Pos;
-import javafx.scene.layout.Border;
 import javafx.scene.layout.HBox;
 import org.apache.commons.io.FileUtils;
-import org.bytedeco.javacv.FrameFilter;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -128,15 +126,15 @@ public class MainController extends VBox implements Initializable{
                 if(e.getClickCount() == 2) {
                     HistoryRow selectedRow = historyListView.getSelectionModel().getSelectedItems().get(0);
 
-                    if(selectedRow.isRunningCC && !selectedRow.endedCC.get()) {
+                    if(selectedRow.enabledCC && !selectedRow.endedCC.get() && !selectedRow.failCC.get()) {
                         return;
                     }
 
-                    if(selectedRow.isRunningDL && !selectedRow.endedDL.get()) {
+                    if(selectedRow.enabledDL && !selectedRow.endedDL.get() && !selectedRow.failDL.get()) {
                         return;
                     }
 
-                    if(selectedRow.isRunningCC) {
+                    if(selectedRow.enabledCC) {
                         historyViewPresentCCResults(selectedRow);
                     } else {
                         historyViewPresentDLResults(selectedRow);
@@ -155,7 +153,7 @@ public class MainController extends VBox implements Initializable{
         JFXButton closeButton = new JFXButton("Close".toUpperCase());
         closeButton.setTextFill(Color.WHITE);
         closeButton.setButtonType(JFXButton.ButtonType.RAISED);
-        closeButton.setText((row.isRunningDL? "Next" : "Close").toUpperCase());
+        closeButton.setText((row.enabledDL ? "Next" : "Close").toUpperCase());
         closeButton.setStyle(
                 "-fx-background-color: #2198F3;\n" +
                         "-fx-end-margin: 10px;\n" + "-fx-start-margin: 10px;\n" + "-fx-spacing: 10px"
@@ -163,7 +161,7 @@ public class MainController extends VBox implements Initializable{
 
         closeButton.setOnAction(event ->  {
             dialog.close();
-            if(row.isRunningDL) {
+            if(row.enabledDL) {
                 historyViewPresentDLResults(row);
             }
         });
@@ -577,7 +575,7 @@ public class MainController extends VBox implements Initializable{
             Platform.runLater(() -> finishTaskCC(historyIndex, e, c45, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
-            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+            Platform.runLater(() -> finishTaskOfIndexWithErrorCC(historyIndex, e));
         }
     }
 
@@ -598,7 +596,7 @@ public class MainController extends VBox implements Initializable{
             Platform.runLater(() -> finishTaskCC(historyIndex, e, NB, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
-            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+            Platform.runLater(() -> finishTaskOfIndexWithErrorCC(historyIndex, e));
         }
     }
 
@@ -620,7 +618,7 @@ public class MainController extends VBox implements Initializable{
             Platform.runLater(() -> finishTaskCC(historyIndex, e, RB, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
-            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+            Platform.runLater(() -> finishTaskOfIndexWithErrorCC(historyIndex, e));
         }
     }
 
@@ -644,7 +642,7 @@ public class MainController extends VBox implements Initializable{
             Platform.runLater(() -> finishTaskCC(historyIndex, e, NN, time, b.toSummaryString()));
         } catch (Exception e) {
             e.printStackTrace();
-            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+            Platform.runLater(() -> finishTaskOfIndexWithErrorCC(historyIndex, e));
         }
     }
 
@@ -728,7 +726,7 @@ public class MainController extends VBox implements Initializable{
             Platform.runLater(() -> finishTaskDL(historyIndex, e, DL, time, b.toSummaryString()));
         } catch(Exception e) {
             e.printStackTrace();
-            Platform.runLater(() -> finishTaskOfIndexWithError(historyIndex));
+            Platform.runLater(() -> finishTaskOfIndexWithErrorDL(historyIndex,e));
         }
     }
 
@@ -748,7 +746,13 @@ public class MainController extends VBox implements Initializable{
         historyList.get(index).endedDL.set(true);
     }
 
-    protected void finishTaskOfIndexWithError(int index) {
-        historyList.get(index).fail.set(true);
+    protected void finishTaskOfIndexWithErrorCC(int index, Exception e) {
+        historyList.get(index).exceptionCC = e;
+        historyList.get(index).failCC.set(true);
+    }
+
+    protected void finishTaskOfIndexWithErrorDL(int index, Exception e) {
+        historyList.get(index).exceptionDL = e;
+        historyList.get(index).failDL.set(true);
     }
 }
